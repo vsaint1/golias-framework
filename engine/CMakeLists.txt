@@ -6,7 +6,7 @@ set(CMAKE_C_STANDARD 99)
 
 add_definitions(-DENGINE_VERSION="${ENGINE_VERSION}")
 
-file(GLOB_RECURSE ENGINE_SOURCES "private/*.cpp" "private/*.c")
+file(GLOB_RECURSE ENGINE_SOURCES CONFIGURE_DEPENDS "private/*.cpp" "private/*.c")
 
 list(FILTER ENGINE_SOURCES EXCLUDE REGEX "engine/private/core/platform/.*")
 list(FILTER ENGINE_SOURCES EXCLUDE REGEX "engine/private/core/renderer/.mm")
@@ -14,29 +14,29 @@ list(FILTER ENGINE_SOURCES EXCLUDE REGEX "engine/private/core/renderer/.mm")
 
 
 if(WIN32)
-    file(GLOB_RECURSE PLATFORM_SOURCES "engine/private/core/platform/windows/*.cpp" "engine/private/core/platform/windows/*.c")
+    file(GLOB_RECURSE PLATFORM_SOURCES CONFIGURE_DEPENDS "engine/private/core/platform/windows/*.cpp" "engine/private/core/platform/windows/*.c")
 
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    file(GLOB_RECURSE PLATFORM_SOURCES  "engine/private/core/platform/linux/*.cpp" "engine/private/core/platform/linux/*.c")
+    file(GLOB_RECURSE PLATFORM_SOURCES CONFIGURE_DEPENDS "engine/private/core/platform/linux/*.cpp" "engine/private/core/platform/linux/*.c")
 
 elseif(ANDROID)
-    file(GLOB_RECURSE PLATFORM_SOURCES "engine/private/core/platform/android/*.cpp" "engine/private/core/platform/android/*.c")
+    file(GLOB_RECURSE PLATFORM_SOURCES CONFIGURE_DEPENDS "engine/private/core/platform/android/*.cpp" "engine/private/core/platform/android/*.c")
 
 elseif(APPLE)
     if (CMAKE_OSX_SYSROOT MATCHES ".*iPhoneOS.*" OR CMAKE_OSX_SYSROOT MATCHES ".*iPhoneSimulator.*")
-        file(GLOB_RECURSE PLATFORM_SOURCES
+        file(GLOB_RECURSE PLATFORM_SOURCES CONFIGURE_DEPENDS
                 "engine/private/core/platform/ios/*.mm"
                 "engine/private/core/platform/ios/*.m"
         )
     else()
-        file(GLOB_RECURSE PLATFORM_SOURCES
+        file(GLOB_RECURSE PLATFORM_SOURCES CONFIGURE_DEPENDS
                 "engine/private/core/platform/macos/*.mm"
                 "engine/private/core/platform/macos/*.m"
         )
     endif()
 
 elseif(EMSCRIPTEN)
-    file(GLOB_RECURSE PLATFORM_SOURCES
+    file(GLOB_RECURSE PLATFORM_SOURCES CONFIGURE_DEPENDS
             "engine/private/core/platform/emscripten/*.cpp"
             "engine/private/core/platform/emscripten/*.c"
     )

@@ -15,6 +15,8 @@ namespace golias {
         int MaxFPS  = 60;
     };
 
+    class VulkanInstance;
+    
     class Application {
     public:
         Application(const ApplicationConfig& config = {});
@@ -29,6 +31,7 @@ namespace golias {
 
     private:
         Ref<Window> mWindow = nullptr;
+        Ref<VulkanInstance> mInstance = nullptr;
         ApplicationConfig mConfig = {};
     };
 

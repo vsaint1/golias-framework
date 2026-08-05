@@ -1,9 +1,17 @@
 #pragma once
 
+#include <array>
+#include <fstream>
 #include <functional>
 #include <iostream>
+#include <map>
 #include <memory>
+#include <optional>
+#include <set>
+#include <string>
+#include <unordered_map>
 #include <utility>
+#include <vector>
 
 #define GLFW_INCLUDE_VULKAN
 #include <glfw/glfw3.h>
@@ -37,11 +45,23 @@
 
 #else
 
-    #define GOLIAS_ASSERT(x)                       \
-        if (!(x)) {                                \
-            LOG_ERROR("Assertion failed: {}", #x); \
-            std::abort();                          \
-        }
+    #define GOLIAS_ASSERT(x)                           \
+        do {                                           \
+            if (!(x)) {                                \
+                LOG_ERROR("Assertion failed: {}", #x); \
+                assert(x);                             \
+            }                                          \
+        } while (0)
+
+
+    #define GOLIAS_ASSERT_MSG(x, msg)                   \
+        do {                                            \
+            if (!(x)) {                                 \
+                LOG_ERROR("Assertion failed: {}", msg); \
+                assert(x);                              \
+            }                                           \
+        } while (0)
+
 
 #endif
 
@@ -60,7 +80,9 @@
 
 #define LOG_CRITICAL(...) ::spdlog::critical("{} - {}", __FUNCTION__, fmt::format(__VA_ARGS__))
 
-#define LOG_FATAL(...) ::spdlog::critical("{} - {}", __FUNCTION__, fmt::format(__VA_ARGS__)); std::abort()
+#define LOG_FATAL(...)                                                     \
+    ::spdlog::critical("{} - {}", __FUNCTION__, fmt::format(__VA_ARGS__)); \
+    std::abort()
 
 
 namespace golias {

@@ -13,8 +13,8 @@ namespace golias {
         void PollEvents();
         bool ShouldClose() const;
 
-        int GetWidth() const { return mWidth; }
-        int GetHeight() const { return mHeight; }
+        int GetWidth() const;
+        int GetHeight() const;
 
         GLFWwindow* GetNativeWindow() const;
 
@@ -24,7 +24,7 @@ namespace golias {
         static void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 
         GLFWwindow* mWindow = nullptr;
-        int mWidth  = 0;
-        int mHeight = 0;
+        int mWidth          = 0;
+        int mHeight         = 0;
     };
 } // namespace golias

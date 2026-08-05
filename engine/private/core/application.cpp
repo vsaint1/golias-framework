@@ -1,4 +1,5 @@
 #include "core/application.h"
+#include "graphics/rhi/vulkan/instance.h"
 
 namespace golias {
 
@@ -36,6 +37,8 @@ namespace golias {
             LOG_INFO("Resized to {}x{}", width, height);
         };
 
+        mInstance = std::make_shared<VulkanInstance>();
+
         return true;
     }
 
@@ -47,6 +50,7 @@ namespace golias {
 
     void Application::Shutdown() {
         mWindow.reset();
+        mInstance.reset();
     }
 
 
