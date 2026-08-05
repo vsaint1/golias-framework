@@ -1,11 +1,11 @@
-#include <cstdio>
-#include <glfw/glfw3.h>
-#include <vulkan/vulkan.h>
+
+#include "core/application.h"
 
 int main(int argc, char* argv[]) {
 
-    
-    printf("Hello world \n");
+    golias::Application app;
 
-    return 0;
+    app.Run();
+
+    return EXIT_SUCCESS;
 }

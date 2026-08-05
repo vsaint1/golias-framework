@@ -23,7 +23,7 @@ message(STATUS "Using assets folder: ${ASSETS_FOLDER}")
 #  PLATFORM SPECIFIC CONFIGURATION
 # =========================================================
 if (UNIX AND NOT EMSCRIPTEN)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-c++11-narrowing -frtti -fexceptions -fPIC -Wall -pthread")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-c++11-narrowing -frtti -fno-exceptions -fPIC -Wall -pthread")
 endif ()
 
 if (APPLE)
