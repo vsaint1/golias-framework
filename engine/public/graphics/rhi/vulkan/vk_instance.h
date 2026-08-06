@@ -9,7 +9,7 @@ namespace golias {
         explicit VulkanInstance(bool enableValidationLayers = true);
         ~VulkanInstance();
 
-        VkInstance GetInstance() const {
+        VkInstance GetHandle() const {
             return mInstance;
         }
 

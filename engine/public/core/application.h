@@ -18,6 +18,8 @@ namespace golias {
     class VulkanInstance;
     class VulkanWindowSurface;
     class VulkanDevice;
+    class VulkanCommandPool;
+    class VulkanSwapchain;
     
     class Application {
     public:
@@ -36,6 +38,8 @@ namespace golias {
         Ref<VulkanInstance> mInstance = nullptr;
         Ref<VulkanWindowSurface> mWindowSurface = nullptr;
         Ref<VulkanDevice> mDevice = nullptr;
+        Ref<VulkanCommandPool> mCommandPool = nullptr;
+        Ref<VulkanSwapchain> mSwapchain = nullptr;
 
         ApplicationConfig mConfig = {};
     };

@@ -11,7 +11,7 @@ namespace golias {
         VulkanWindowSurface(Ref<VulkanInstance> instance, Ref<Window> window);
         ~VulkanWindowSurface();
 
-        VkSurfaceKHR GetSurface() const;
+        VkSurfaceKHR GetHandle() const;
         VkInstance GetInstance() const;
 
     private:

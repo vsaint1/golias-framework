@@ -1,12 +1,12 @@
-#include "graphics/rhi/vulkan/window_surface.h"
-#include "graphics/rhi/vulkan/instance.h"
+#include "graphics/rhi/vulkan/vk_window_surface.h"
+#include "graphics/rhi/vulkan/vk_instance.h"
 #include "core/window.h"
 
 
 namespace golias {
 
     VulkanWindowSurface::VulkanWindowSurface(Ref<VulkanInstance> instance, Ref<Window> window) : mInstance(instance) {
-        VkResult result = glfwCreateWindowSurface(instance->GetInstance(), window->GetNativeWindow(), nullptr, &mSurface);
+        VkResult result = glfwCreateWindowSurface(instance->GetHandle(), window->GetNativeWindow(), nullptr, &mSurface);
         VK_CHECK_RESULT(result);
 
         LOG_INFO("Created Vulkan window surface.");
@@ -20,12 +20,12 @@ namespace golias {
         
     }
 
-    VkSurfaceKHR VulkanWindowSurface::GetSurface() const {
+    VkSurfaceKHR VulkanWindowSurface::GetHandle() const {
         return mSurface;
     }
 
     VkInstance VulkanWindowSurface::GetInstance() const {
-        return mInstance->GetInstance();
+        return mInstance->GetHandle();
     }
 
 } // namespace golias

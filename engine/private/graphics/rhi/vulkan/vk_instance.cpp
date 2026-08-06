@@ -1,4 +1,4 @@
-#include "graphics/rhi/vulkan/instance.h"
+#include "graphics/rhi/vulkan/vk_instance.h"
 
 namespace golias {
 

@@ -1,7 +1,9 @@
 #include "core/application.h"
-#include "graphics/rhi/vulkan/instance.h"
-#include "graphics/rhi/vulkan/window_surface.h"
+#include "graphics/rhi/vulkan/vk_instance.h"
+#include "graphics/rhi/vulkan/vk_window_surface.h"
 #include "graphics/rhi/vulkan/vk_device.h"
+#include "graphics/rhi/vulkan/vk_command_pool.h"
+#include "graphics/rhi/vulkan/vk_swapchain.h"
 
 namespace golias {
 
@@ -43,8 +45,11 @@ namespace golias {
 
         mWindowSurface = std::make_shared<VulkanWindowSurface>(mInstance, mWindow);
 
-
         mDevice = std::make_shared<VulkanDevice>(mInstance, mWindowSurface);
+
+        mCommandPool = std::make_shared<VulkanCommandPool>(mDevice);
+
+        mSwapchain = std::make_shared<VulkanSwapchain>(mDevice, mWindowSurface, mWindow);
 
         return true;
     }
@@ -56,10 +61,11 @@ namespace golias {
     }
 
     void Application::Shutdown() {
-        mWindow.reset();
-        mInstance.reset();
-        mWindowSurface.reset();
+        mCommandPool.reset();
         mDevice.reset();
+        mWindowSurface.reset();
+        mInstance.reset();
+        mWindow.reset();
     }
 
 

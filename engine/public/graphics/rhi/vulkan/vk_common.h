@@ -2,6 +2,7 @@
 
 #include "stdafx.h"
 #include <vulkan/vulkan.h>
+#include <vulkan/vk_enum_string_helper.h>
 
 #define VK_CHECK_RESULT(f)                    \
     do {                                      \

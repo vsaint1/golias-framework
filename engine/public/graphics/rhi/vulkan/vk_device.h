@@ -20,11 +20,27 @@ namespace golias {
             return mDevice;
         }
 
+        VkQueue GetGraphicsQueue() const {
+            return mGraphicsQueue;
+        }
+
+        VkQueue GetPresentQueue() const {
+            return mPresentQueue;
+        }
+
+        uint32_t GetGraphicsQueueFamilyIndex() const {
+            return mGraphicsQueueFamilyIndex;
+        }
+
+        uint32_t GetPresentQueueFamilyIndex() const {
+            return mPresentQueueFamilyIndex;
+        }
+
     private:
         void PickPhysicalDevice();
         void CreateLogicalDevice();
+        void SetupDeviceQueues();
 
-        const char* GetDeviceTypeCString(VkPhysicalDeviceType type) const;
         const char* GetVendorName(uint32_t vendorID) const;
 
     private:
@@ -34,7 +50,13 @@ namespace golias {
         VkPhysicalDevice mPhysicalDevice = VK_NULL_HANDLE;
         VkDevice mDevice                 = VK_NULL_HANDLE;
 
-        uint32_t mGraphicsQueueFamilyIndex = 0;
-        uint32_t mPresentQueueFamilyIndex  = 0;
+        VkQueue mGraphicsQueue = VK_NULL_HANDLE;
+        VkQueue mPresentQueue  = VK_NULL_HANDLE;
+
+        uint32_t mGraphicsQueueFamilyIndex = UINT32_MAX;
+        uint32_t mPresentQueueFamilyIndex  = UINT32_MAX;
+
+        const std::vector<const char*> mRequiredDeviceExtensions = {"VK_KHR_swapchain"};
+
     };
 } // namespace golias
