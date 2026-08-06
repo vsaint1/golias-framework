@@ -16,6 +16,8 @@ namespace golias {
     };
 
     class VulkanInstance;
+    class VulkanWindowSurface;
+    class VulkanDevice;
     
     class Application {
     public:
@@ -32,6 +34,9 @@ namespace golias {
     private:
         Ref<Window> mWindow = nullptr;
         Ref<VulkanInstance> mInstance = nullptr;
+        Ref<VulkanWindowSurface> mWindowSurface = nullptr;
+        Ref<VulkanDevice> mDevice = nullptr;
+
         ApplicationConfig mConfig = {};
     };
 

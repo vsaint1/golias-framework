@@ -7,13 +7,17 @@ namespace golias {
 
     VulkanWindowSurface::VulkanWindowSurface(Ref<VulkanInstance> instance, Ref<Window> window) : mInstance(instance) {
         VkResult result = glfwCreateWindowSurface(instance->GetInstance(), window->GetNativeWindow(), nullptr, &mSurface);
-        if (result != VK_SUCCESS) {
-            LOG_FATAL("Failed to create Vulkan window surface.");
-        }
+        VK_CHECK_RESULT(result);
+
+        LOG_INFO("Created Vulkan window surface.");
     }
 
     VulkanWindowSurface::~VulkanWindowSurface() {
-        vkDestroySurfaceKHR(GetInstance(), mSurface, nullptr);
+        if(mSurface != VK_NULL_HANDLE) {
+            vkDestroySurfaceKHR(GetInstance(), mSurface, nullptr);
+            mSurface = VK_NULL_HANDLE;
+        }
+        
     }
 
     VkSurfaceKHR VulkanWindowSurface::GetSurface() const {
