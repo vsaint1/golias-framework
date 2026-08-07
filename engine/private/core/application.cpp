@@ -1,9 +1,12 @@
 #include "core/application.h"
 
+#include "graphics/rhi/vulkan/vk_command_buffer.h"
 #include "graphics/rhi/vulkan/vk_command_pool.h"
 #include "graphics/rhi/vulkan/vk_device.h"
 #include "graphics/rhi/vulkan/vk_instance.h"
+#include "graphics/rhi/vulkan/vk_pipeline.h"
 #include "graphics/rhi/vulkan/vk_renderpass.h"
+#include "graphics/rhi/vulkan/vk_shader.h"
 #include "graphics/rhi/vulkan/vk_swapchain.h"
 #include "graphics/rhi/vulkan/vk_window_surface.h"
 
@@ -93,6 +96,87 @@ namespace golias {
             mSwapchain->CreateFramebuffer(rp);
         }
 
+        {
+            auto pipeline                                        = std::make_shared<VulkanPipeline>(mDevice, mRenderPass);
+            VkPipelineVertexInputStateCreateInfo vertexInputInfo = {
+                .sType                           = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
+                .vertexBindingDescriptionCount   = 0,
+                .pVertexBindingDescriptions      = nullptr,
+                .vertexAttributeDescriptionCount = 0,
+                .pVertexAttributeDescriptions    = nullptr,
+            };
+
+
+            VkPipelineInputAssemblyStateCreateInfo inputAssembly = {
+                .sType                  = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
+                .topology               = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+                .primitiveRestartEnable = VK_FALSE,
+            };
+
+            VkViewport viewport = {
+                .x        = 0.0f,
+                .y        = 0.0f,
+                .width    = static_cast<float>(mSwapchain->GetExtent().width),
+                .height   = static_cast<float>(mSwapchain->GetExtent().height),
+                .minDepth = 0.0f,
+                .maxDepth = 1.0f,
+            };
+
+            VkRect2D scissor = {
+                .offset = {0, 0},
+                .extent = mSwapchain->GetExtent(),
+            };
+
+            VkPipelineRasterizationStateCreateInfo rasterizer = {.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
+                                                                 .depthClampEnable        = VK_FALSE,
+                                                                 .rasterizerDiscardEnable = VK_FALSE,
+                                                                 .polygonMode             = VK_POLYGON_MODE_FILL,
+                                                                 .cullMode                = VK_CULL_MODE_BACK_BIT,
+                                                                 .frontFace               = VK_FRONT_FACE_CLOCKWISE,
+                                                                 .depthBiasEnable         = VK_FALSE,
+                                                                 .lineWidth               = 1.0f};
+
+            VkPipelineMultisampleStateCreateInfo multisampling = {
+                .sType                = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
+                .pNext                = nullptr,
+                .flags                = 0,
+                .rasterizationSamples = VK_SAMPLE_COUNT_1_BIT,
+                .sampleShadingEnable  = VK_FALSE,
+            };
+
+            VkPipelineColorBlendAttachmentState colorBlendAttachment = {
+                .blendEnable    = VK_FALSE,
+                .colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
+            };
+
+            VkPipelineLayoutCreateInfo pipelineLayoutInfo = {
+                .sType                  = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+                .setLayoutCount         = 0,
+                .pSetLayouts            = nullptr,
+                .pushConstantRangeCount = 0,
+                .pPushConstantRanges    = nullptr,
+            };
+
+            VulkanGraphicsPipelineDesc pipelineDesc;
+            pipelineDesc.VertexInput          = vertexInputInfo;
+            pipelineDesc.InputAssembly        = inputAssembly;
+            pipelineDesc.Viewport             = viewport;
+            pipelineDesc.Scissor              = scissor;
+            pipelineDesc.Rasterizer           = rasterizer;
+            pipelineDesc.Multisampling        = multisampling;
+            pipelineDesc.ColorBlendAttachment = colorBlendAttachment;
+            pipelineDesc.Layout               = pipelineLayoutInfo;
+            pipelineDesc.Shaders              = {
+                std::make_shared<VulkanShader>(mDevice, "res/internal/shaders/vulkan/test.spv", "vertex_main", VK_SHADER_STAGE_VERTEX_BIT),
+                std::make_shared<VulkanShader>(mDevice, "res/internal/shaders/vulkan/test.spv", "fragment_main", VK_SHADER_STAGE_FRAGMENT_BIT),
+            };
+
+            pipeline->CreateGraphicsPipeline(pipelineDesc);
+            mPipeline = pipeline;
+        }
+
+        RecordCmdBuffers();
+
         return true;
     }
 
@@ -101,8 +185,66 @@ namespace golias {
             mWindow->PollEvents();
             RenderFrame();
         }
-        
+
         vkDeviceWaitIdle(mDevice->GetHandle());
+    }
+
+    void Application::RecordCmdBuffers() {
+        auto framebuffers = mSwapchain->GetSwapchainFramebuffers();
+
+        auto extent = mSwapchain->GetExtent();
+
+        uint32_t imageCount = mSwapchain->GetImageCount();
+
+        mCommandBuffers.resize(imageCount);
+
+        for (size_t i = 0; i < imageCount; ++i) {
+            mCommandBuffers[i] = std::make_shared<VulkanCommandBuffer>(mDevice, mCommandPool);
+
+            VkCommandBufferBeginInfo beginInfo = {
+                .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+                .flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT,
+            };
+
+            mCommandBuffers[i]->Begin(beginInfo.flags);
+
+            VkClearValue clearColor = {{{0.0f, 0.0f, 0.5f, 1.0f}}};
+
+            VkRenderPassBeginInfo renderPassInfo = {
+                .sType           = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+                .renderPass      = mRenderPass->GetHandle(),
+                .framebuffer     = framebuffers[i],
+                .renderArea      = {{0, 0}, extent},
+                .clearValueCount = 1,
+                .pClearValues    = &clearColor,
+            };
+
+            mCommandBuffers[i]->BeginRenderPass(renderPassInfo);
+            mCommandBuffers[i]->BindGraphicsPipeline(mPipeline);
+
+            VkViewport viewport = {
+                .x        = 0.0f,
+                .y        = 0.0f,
+                .width    = static_cast<float>(extent.width),
+                .height   = static_cast<float>(extent.height),
+                .minDepth = 0.0f,
+                .maxDepth = 1.0f,
+            };
+
+            vkCmdSetViewport(mCommandBuffers[i]->GetHandle(), 0, 1, &viewport);
+
+            VkRect2D scissor = {
+                .offset = {0, 0},
+                .extent = extent,
+            };
+
+            vkCmdSetScissor(mCommandBuffers[i]->GetHandle(), 0, 1, &scissor);
+
+            mCommandBuffers[i]->Draw(3);
+            mCommandBuffers[i]->EndRenderPass();
+
+            mCommandBuffers[i]->End();
+        }
     }
 
     void Application::RenderFrame() {
@@ -110,40 +252,7 @@ namespace golias {
         VkResult result =
             vkAcquireNextImageKHR(mDevice->GetHandle(), mSwapchain->GetHandle(), UINT64_MAX, VK_NULL_HANDLE, VK_NULL_HANDLE, &imageIndex);
 
-        VkCommandBufferAllocateInfo allocInfo = {
-            .sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-            .commandPool        = mCommandPool->GetHandle(),
-            .level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-            .commandBufferCount = 1,
-        };
-
-        VkCommandBuffer commandBuffer;
-        vkAllocateCommandBuffers(mDevice->GetHandle(), &allocInfo, &commandBuffer);
-
-        VkCommandBufferBeginInfo beginInfo = {
-            .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-            .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
-        };
-
-        vkBeginCommandBuffer(commandBuffer, &beginInfo);
-
-        VkClearValue clearColor = {{{0.0f, 0.0f, 0.5f, 1.0f}}};
-
-        VkRenderPassBeginInfo renderPassInfo = {
-            .sType           = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-            .renderPass      = mRenderPass->GetHandle(),
-            .framebuffer     = mSwapchain->GetSwapchainFramebuffer(imageIndex),
-            .renderArea      = {{0, 0}, mSwapchain->GetExtent()},
-            .clearValueCount = 1,
-            .pClearValues    = &clearColor,
-        };
-
-
-        vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-        // todo
-        vkCmdEndRenderPass(commandBuffer);
-
-        vkEndCommandBuffer(commandBuffer);
+        VkCommandBuffer commandBuffer = mCommandBuffers[imageIndex]->GetHandle();
 
         VkSubmitInfo submitInfo = {
             .sType              = VK_STRUCTURE_TYPE_SUBMIT_INFO,
@@ -151,25 +260,31 @@ namespace golias {
             .pCommandBuffers    = &commandBuffer,
         };
 
-
         VkQueue graphicsQueue = mDevice->GetGraphicsQueue();
-        vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+
+        if (vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE) != VK_SUCCESS) {
+            LOG_ERROR("Failed to submit draw command buffer!");
+        }
+        
         vkQueueWaitIdle(graphicsQueue);
 
-        vkFreeCommandBuffers(mDevice->GetHandle(), mCommandPool->GetHandle(), 1, &commandBuffer);
+        VkSwapchainKHR swapchain = mSwapchain->GetHandle();
 
-        VkSwapchainKHR sc = mSwapchain->GetHandle();
         VkPresentInfoKHR presentInfo = {
-            .sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
-            .swapchainCount     = 1,
-            .pSwapchains        = &sc,
-            .pImageIndices      = &imageIndex,
+            .sType          = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+            .swapchainCount = 1,
+            .pSwapchains    = &swapchain,
+            .pImageIndices  = &imageIndex,
         };
 
-        vkQueuePresentKHR(graphicsQueue, &presentInfo);
+        vkQueuePresentKHR(mDevice->GetPresentQueue(), &presentInfo);
     }
 
     void Application::Shutdown() {
+        mCommandBuffers.clear();
+        mPipeline.reset();
+        mRenderPass.reset();
+        mSwapchain.reset();
         mCommandPool.reset();
         mDevice.reset();
         mWindowSurface.reset();

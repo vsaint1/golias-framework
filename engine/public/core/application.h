@@ -21,7 +21,9 @@ namespace golias {
     class VulkanCommandPool;
     class VulkanSwapchain;
     class VulkanRenderPass;
-    
+    class VulkanPipeline;   
+    class VulkanCommandBuffer;
+
     class Application {
     public:
         Application(const ApplicationConfig& config = {});
@@ -35,6 +37,8 @@ namespace golias {
         void Shutdown();
         void RenderFrame();
 
+        void RecordCmdBuffers();
+
     private:
         Ref<Window> mWindow = nullptr;
         Ref<VulkanInstance> mInstance = nullptr;
@@ -43,6 +47,10 @@ namespace golias {
         Ref<VulkanCommandPool> mCommandPool = nullptr;
         Ref<VulkanSwapchain> mSwapchain = nullptr;
         Ref<VulkanRenderPass> mRenderPass = nullptr;
+
+        Ref<VulkanPipeline> mPipeline = nullptr;
+
+        std::vector<Ref<VulkanCommandBuffer>> mCommandBuffers;
 
         ApplicationConfig mConfig = {};
     };
