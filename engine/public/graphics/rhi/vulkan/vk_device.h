@@ -12,11 +12,11 @@ namespace golias {
         ~VulkanDevice();
 
 
-        VkPhysicalDevice GetPhysicalDevice() const {
+        VkPhysicalDevice GetPhysicalDeviceHandle() const {
             return mPhysicalDevice;
         }
 
-        VkDevice GetDevice() const {
+        VkDevice GetHandle() const {
             return mDevice;
         }
 

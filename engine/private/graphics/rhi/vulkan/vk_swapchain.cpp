@@ -2,6 +2,7 @@
 
 #include "core/window.h"
 #include "graphics/rhi/vulkan/vk_device.h"
+#include "graphics/rhi/vulkan/vk_renderpass.h"
 #include "graphics/rhi/vulkan/vk_window_surface.h"
 
 namespace golias {
@@ -14,6 +15,7 @@ namespace golias {
         mExtent        = ChooseSwapExtent(swapchainSupport.Capabilities);
         mSurfaceFormat = ChooseSwapSurfaceFormat(swapchainSupport.Formats);
         mPresentMode   = ChooseSwapPresentMode(swapchainSupport.PresentModes);
+        mImageFormat   = mSurfaceFormat.format;
 
 
         mImageCount = swapchainSupport.Capabilities.minImageCount + 1;
@@ -49,15 +51,15 @@ namespace golias {
         createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
         createInfo.presentMode    = mPresentMode;
 
-        VkResult result = vkCreateSwapchainKHR(mDevice->GetDevice(), &createInfo, nullptr, &mSwapchain);
+        VkResult result = vkCreateSwapchainKHR(mDevice->GetHandle(), &createInfo, nullptr, &mSwapchain);
         VK_CHECK_RESULT(result);
 
         mImageCount = 0;
-        result      = vkGetSwapchainImagesKHR(mDevice->GetDevice(), mSwapchain, &mImageCount, nullptr);
+        result      = vkGetSwapchainImagesKHR(mDevice->GetHandle(), mSwapchain, &mImageCount, nullptr);
         VK_CHECK_RESULT(result);
 
         mSwapchainImages.resize(mImageCount);
-        result = vkGetSwapchainImagesKHR(mDevice->GetDevice(), mSwapchain, &mImageCount, mSwapchainImages.data());
+        result = vkGetSwapchainImagesKHR(mDevice->GetHandle(), mSwapchain, &mImageCount, mSwapchainImages.data());
         VK_CHECK_RESULT(result);
 
         CreateImageViews();
@@ -96,44 +98,90 @@ namespace golias {
                                  },
             };
 
-            VkResult result = vkCreateImageView(mDevice->GetDevice(), &createInfo, nullptr, &mSwapchainImageViews.emplace_back());
+            VkResult result = vkCreateImageView(mDevice->GetHandle(), &createInfo, nullptr, &mSwapchainImageViews.emplace_back());
             VK_CHECK_RESULT(result);
         };
     }
 
     VulkanSwapchain::~VulkanSwapchain() {
         for (const auto& framebuffer : mSwapchainFramebuffers) {
-            vkDestroyFramebuffer(mDevice->GetDevice(), framebuffer, nullptr);
+            vkDestroyFramebuffer(mDevice->GetHandle(), framebuffer, nullptr);
         }
 
         for (const auto& imageView : mSwapchainImageViews) {
-            vkDestroyImageView(mDevice->GetDevice(), imageView, nullptr);
+            vkDestroyImageView(mDevice->GetHandle(), imageView, nullptr);
         }
 
-        vkDestroySwapchainKHR(mDevice->GetDevice(), mSwapchain, nullptr);
+        if (mSwapchain != VK_NULL_HANDLE) {
+            vkDestroySwapchainKHR(mDevice->GetHandle(), mSwapchain, nullptr);
+        }
     }
 
+    VkSwapchainKHR VulkanSwapchain::GetHandle() const {
+        return mSwapchain;
+    }
+
+    VkFormat VulkanSwapchain::GetImageFormat() const {
+        return mImageFormat;
+    }
+
+    VkExtent2D VulkanSwapchain::GetExtent() const {
+        return mExtent;
+    }
+
+    uint32_t VulkanSwapchain::GetImageCount() const {
+        return static_cast<uint32_t>(mSwapchainImages.size());
+    }
+
+    const std::vector<VkImage>& VulkanSwapchain::GetSwapchainImages() const {
+        return mSwapchainImages;
+    }
+
+    void VulkanSwapchain::CreateFramebuffer(const Ref<VulkanRenderPass>& renderPass) {
+        mSwapchainFramebuffers.resize(mImageCount);
+
+        for (size_t i = 0; i < mImageCount; i++) {
+            VkImageView attachments[] = {mSwapchainImageViews[i]};
+
+            VkFramebufferCreateInfo framebufferInfo = {
+                .sType           = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+                .renderPass      = renderPass->GetHandle(),
+                .attachmentCount = 1,
+                .pAttachments    = attachments,
+                .width           = mExtent.width,
+                .height          = mExtent.height,
+                .layers          = 1,
+            };
+
+            if (vkCreateFramebuffer(mDevice->GetHandle(), &framebufferInfo, nullptr, &mSwapchainFramebuffers[i]) != VK_SUCCESS) {
+                LOG_FATAL("Failed to create framebuffer for swapchain image {}", i);
+            }
+
+            LOG_INFO("Created framebuffer for swapchain image {}", i);
+        }
+    }
 
     VulkanSwapchainSupportDetails VulkanSwapchain::QuerySwapchainSupport() {
         VulkanSwapchainSupportDetails details;
-        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(mDevice->GetPhysicalDevice(), mWindowSurface->GetHandle(), &details.Capabilities);
+        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(mDevice->GetPhysicalDeviceHandle(), mWindowSurface->GetHandle(), &details.Capabilities);
 
         uint32_t formatCount;
-        vkGetPhysicalDeviceSurfaceFormatsKHR(mDevice->GetPhysicalDevice(), mWindowSurface->GetHandle(), &formatCount, nullptr);
+        vkGetPhysicalDeviceSurfaceFormatsKHR(mDevice->GetPhysicalDeviceHandle(), mWindowSurface->GetHandle(), &formatCount, nullptr);
 
         if (formatCount != 0) {
             details.Formats.resize(formatCount);
             vkGetPhysicalDeviceSurfaceFormatsKHR(
-                mDevice->GetPhysicalDevice(), mWindowSurface->GetHandle(), &formatCount, details.Formats.data());
+                mDevice->GetPhysicalDeviceHandle(), mWindowSurface->GetHandle(), &formatCount, details.Formats.data());
         }
 
         uint32_t presentModeCount;
-        vkGetPhysicalDeviceSurfacePresentModesKHR(mDevice->GetPhysicalDevice(), mWindowSurface->GetHandle(), &presentModeCount, nullptr);
+        vkGetPhysicalDeviceSurfacePresentModesKHR(
+            mDevice->GetPhysicalDeviceHandle(), mWindowSurface->GetHandle(), &presentModeCount, nullptr);
 
         if (presentModeCount != 0) {
             details.PresentModes.resize(presentModeCount);
             vkGetPhysicalDeviceSurfacePresentModesKHR(
-                mDevice->GetPhysicalDevice(), mWindowSurface->GetHandle(), &presentModeCount, details.PresentModes.data());
+                mDevice->GetPhysicalDeviceHandle(), mWindowSurface->GetHandle(), &presentModeCount, details.PresentModes.data());
         }
 
         return details;

@@ -150,6 +150,8 @@ namespace golias {
             destroy_debug_utils_messenger_ext(mInstance, mDebugMessenger, nullptr);
         }
 
-        vkDestroyInstance(mInstance, nullptr);
+        if(mInstance != VK_NULL_HANDLE) {
+            vkDestroyInstance(mInstance, nullptr);
+        }
     }
 } // namespace golias

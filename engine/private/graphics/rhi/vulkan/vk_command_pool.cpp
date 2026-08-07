@@ -11,7 +11,7 @@ namespace golias {
                                             .flags            = flags,
                                             .queueFamilyIndex = mDevice->GetGraphicsQueueFamilyIndex()};
 
-        if (vkCreateCommandPool(mDevice->GetDevice(), &poolInfo, nullptr, &mCommandPool) != VK_SUCCESS) {
+        if (vkCreateCommandPool(mDevice->GetHandle(), &poolInfo, nullptr, &mCommandPool) != VK_SUCCESS) {
             LOG_FATAL("Failed to create command pool.");
         }
 
@@ -19,7 +19,7 @@ namespace golias {
     }
 
     VulkanCommandPool::~VulkanCommandPool() {
-        vkDestroyCommandPool(mDevice->GetDevice(), mCommandPool, nullptr);
+        vkDestroyCommandPool(mDevice->GetHandle(), mCommandPool, nullptr);
     }
 
 } // namespace golias

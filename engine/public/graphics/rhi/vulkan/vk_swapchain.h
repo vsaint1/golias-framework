@@ -20,26 +20,33 @@ namespace golias {
         VulkanSwapchain(Ref<VulkanDevice> device, Ref<VulkanWindowSurface> windowSurface, Ref<Window> window);
         ~VulkanSwapchain();
 
-        VkSwapchainKHR GetHandle() const {
-            return mSwapchain;
+        VkSwapchainKHR GetHandle() const;
+        
+        VkFormat GetImageFormat() const;
+
+        VkExtent2D GetExtent() const;
+
+        uint32_t GetImageCount() const;
+
+        const std::vector<VkImage>& GetSwapchainImages() const;
+
+        void CreateFramebuffer(const Ref<VulkanRenderPass>& renderPass);
+
+        const std::vector<VkFramebuffer>& GetSwapchainFramebuffers() const {
+            return mSwapchainFramebuffers;
         }
 
-        VkFormat GetImageFormat() const {
-            return mImageFormat;
+        const std::vector<VkImageView>& GetSwapchainImageViews() const {
+            return mSwapchainImageViews;
         }
 
-        VkExtent2D GetExtent() const {
-            return mExtent;
+        const VkFramebuffer& GetSwapchainFramebuffer(size_t index) const {
+            if (index >= mSwapchainFramebuffers.size()) {
+                LOG_FATAL("Index {} is out of bounds for swapchain framebuffers.", index);
+            }
+            
+            return mSwapchainFramebuffers[index];
         }
-
-        uint32_t GetImageCount() const {
-            return static_cast<uint32_t>(mSwapchainImages.size());
-        }
-
-        const std::vector<VkImage>& GetSwapchainImages() const {
-            return mSwapchainImages;
-        }
-
 
     private:
         VulkanSwapchainSupportDetails QuerySwapchainSupport();

@@ -13,7 +13,10 @@ namespace golias {
     }
 
     VulkanDevice::~VulkanDevice() {
-        vkDestroyDevice(mDevice, nullptr);
+        if(mDevice != VK_NULL_HANDLE) {
+            vkDeviceWaitIdle(mDevice);
+            vkDestroyDevice(mDevice, nullptr);
+        }
     }
 
     void VulkanDevice::PickPhysicalDevice() {

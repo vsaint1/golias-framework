@@ -20,6 +20,7 @@ namespace golias {
     class VulkanDevice;
     class VulkanCommandPool;
     class VulkanSwapchain;
+    class VulkanRenderPass;
     
     class Application {
     public:
@@ -32,6 +33,7 @@ namespace golias {
         bool Initialize();
         void MainLoop();
         void Shutdown();
+        void RenderFrame();
 
     private:
         Ref<Window> mWindow = nullptr;
@@ -40,6 +42,7 @@ namespace golias {
         Ref<VulkanDevice> mDevice = nullptr;
         Ref<VulkanCommandPool> mCommandPool = nullptr;
         Ref<VulkanSwapchain> mSwapchain = nullptr;
+        Ref<VulkanRenderPass> mRenderPass = nullptr;
 
         ApplicationConfig mConfig = {};
     };
