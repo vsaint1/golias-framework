@@ -38,6 +38,41 @@ namespace golias {
         vkEndCommandBuffer(mCommandBuffer);
     }
 
+    void VulkanCommandBuffer::SetViewport(const VkViewport& viewport) {
+        vkCmdSetViewport(mCommandBuffer, 0, 1, &viewport);
+    }
+
+    void VulkanCommandBuffer::SetScissor(const VkRect2D& scissor) {
+        vkCmdSetScissor(mCommandBuffer, 0, 1, &scissor);
+    }
+
+    void VulkanCommandBuffer::CopyBuffer(
+        VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size, VkDeviceSize srcOffset, VkDeviceSize dstOffset) {
+        VkBufferCopy copyRegion = {
+            .srcOffset = srcOffset,
+            .dstOffset = dstOffset,
+            .size      = size,
+        };
+
+        vkCmdCopyBuffer(mCommandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
+    }
+
+    void VulkanCommandBuffer::Submit(VkQueue queue) {
+        VkSubmitInfo submitInfo = {
+            .sType              = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+            .commandBufferCount = 1,
+            .pCommandBuffers    = &mCommandBuffer,
+        };
+
+        VkResult result = vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE);
+        VK_CHECK_RESULT(result);
+    }
+
+    void VulkanCommandBuffer::Wait(VkQueue queue) {
+        VkResult result = vkQueueWaitIdle(queue);
+        VK_CHECK_RESULT(result);
+    }
+
     void VulkanCommandBuffer::BeginRenderPass(const VkRenderPassBeginInfo& renderPassInfo, VkSubpassContents contents) {
         vkCmdBeginRenderPass(mCommandBuffer, &renderPassInfo, contents);
     }
