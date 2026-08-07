@@ -36,6 +36,8 @@ namespace golias {
             return mPresentQueueFamilyIndex;
         }
 
+        uint32_t FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) const;
+
     private:
         void PickPhysicalDevice();
         void CreateLogicalDevice();

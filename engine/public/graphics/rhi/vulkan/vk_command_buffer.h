@@ -22,6 +22,15 @@ namespace golias {
 
         void Draw(uint32_t vertexCount, uint32_t instanceCount = 1, uint32_t firstVertex = 0, uint32_t firstInstance = 0);
 
+        void SetViewport(const VkViewport& viewport);
+        void SetScissor(const VkRect2D& scissor);
+
+        void CopyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size, VkDeviceSize srcOffset = 0, VkDeviceSize dstOffset = 0);
+        
+        void Submit(VkQueue queue);
+        
+        void Wait(VkQueue queue);
+
         VkCommandBuffer GetHandle() const {
             return mCommandBuffer;
         }
