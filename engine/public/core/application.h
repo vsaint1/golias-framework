@@ -23,6 +23,9 @@ namespace golias {
     class VulkanRenderPass;
     class VulkanPipeline;   
     class VulkanCommandBuffer;
+    class VulkanFence;
+    class VulkanSemaphore;
+    class VulkanBuffer;
 
     class Application {
     public:
@@ -48,9 +51,17 @@ namespace golias {
         Ref<VulkanSwapchain> mSwapchain = nullptr;
         Ref<VulkanRenderPass> mRenderPass = nullptr;
 
+        Ref<VulkanBuffer> mVertexBuffer = nullptr;
+        Ref<VulkanBuffer> mIndexBuffer = nullptr;
+        
         Ref<VulkanPipeline> mPipeline = nullptr;
 
         std::vector<Ref<VulkanCommandBuffer>> mCommandBuffers;
+
+        uint32_t mCurrentFrame = 0;
+        std::vector<Ref<VulkanFence>> mInFlightFences;
+        std::vector<Ref<VulkanSemaphore>> mImageAvailableSemaphores;
+        std::vector<Ref<VulkanSemaphore>> mRenderFinishedSemaphores;
 
         ApplicationConfig mConfig = {};
     };

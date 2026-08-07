@@ -5,40 +5,39 @@ namespace golias {
 
     class VulkanDevice;
 
-    class VulkanShader {
+    enum class ShaderStage { Vertex, Fragment, Geometry, Compute };
+
+    enum class ShaderSourceType { GLSL, HLSL, SPIRV };
+
+    struct ShaderDesc {
+        std::string path;
+
+        ShaderStage stage = ShaderStage::Vertex;
+
+        std::string entryPoint = "main";
+
+        ShaderSourceType source = ShaderSourceType::SPIRV;
+    };
+
+
+
+    class VulkanShader  {
     public:
-        VulkanShader(Ref<VulkanDevice> device, const std::string& fileName, const std::string& entryPoint, VkShaderStageFlagBits stage);
+        VulkanShader()= default;
         ~VulkanShader();
 
-        VkShaderModule GetHandle() const {
-            return mShaderModule;
-        }
+        static Ref<VulkanShader> CreateFromFile(Ref<VulkanDevice> device, ShaderDesc desc);
 
-        VkShaderStageFlagBits GetStage() const {
-            return mStage;
-        }
+        VkShaderModule GetHandle() const;
 
-        const char* GetEntryPoint() const {
-            return mEntryPoint.c_str();
-        }
+        VkShaderStageFlagBits GetStage() const;
+
+        const char* GetEntryPoint() const;
 
     private:
-        std::vector<char> ReadFile(const std::string& fileName) {
-            std::ifstream file(fileName, std::ios::ate | std::ios::binary);
+        std::vector<char> ReadFile(const std::string& path);
 
-            if (!file.is_open()) {
-                LOG_FATAL("Failed to open shader file: {}", fileName);
-                file.close();
-                return std::vector<char>();
-            }
-
-            size_t fileSize = static_cast<size_t>(file.tellg());
-            std::vector<char> buffer(fileSize);
-            file.seekg(0);
-            file.read(buffer.data(), fileSize);
-            file.close();
-            return buffer;
-        }
+        VkShaderStageFlagBits ConvertShaderStage(ShaderStage stage) const;
 
     private:
         Ref<VulkanDevice> mDevice;

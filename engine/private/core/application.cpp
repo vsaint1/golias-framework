@@ -8,7 +8,9 @@
 #include "graphics/rhi/vulkan/vk_renderpass.h"
 #include "graphics/rhi/vulkan/vk_shader.h"
 #include "graphics/rhi/vulkan/vk_swapchain.h"
+#include "graphics/rhi/vulkan/vk_sync.h"
 #include "graphics/rhi/vulkan/vk_window_surface.h"
+#include "graphics/rhi/vulkan/vk_buffer.h"
 
 namespace golias {
 
@@ -28,6 +30,17 @@ namespace golias {
         MainLoop();
         Shutdown();
     }
+
+    struct Vertex {
+        float pos[2];
+        float color[3];
+    };
+
+    static const std::vector<Vertex> vertices = {
+        {{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+        {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
+        {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
+    };
 
     bool Application::Initialize() {
         if (!glfwInit()) {
@@ -96,14 +109,49 @@ namespace golias {
             mSwapchain->CreateFramebuffer(rp);
         }
 
+
+        BufferDesc vertexBufferDesc;
+        vertexBufferDesc.type  = BufferType::Vertex;
+        vertexBufferDesc.usage = BufferUsage::Static;
+        vertexBufferDesc.size = sizeof(vertices[0]) * vertices.size();
+        vertexBufferDesc.data = vertices.data();
+
+        mVertexBuffer = std::make_shared<VulkanBuffer>(mDevice, vertexBufferDesc);
+
+
+
         {
             auto pipeline                                        = std::make_shared<VulkanPipeline>(mDevice, mRenderPass);
+
+            VkVertexInputBindingDescription bindingDescription = {
+                .binding   = 0,
+                .stride    = sizeof(Vertex),
+                .inputRate = VK_VERTEX_INPUT_RATE_VERTEX,
+            };
+            
+            std::vector<VkVertexInputBindingDescription> bindingDescriptions = {bindingDescription};
+
+            std::vector<VkVertexInputAttributeDescription> attributeDescriptions = {
+                {
+                    .location = 0,
+                    .binding  = 0,
+                    .format   = VK_FORMAT_R32G32B32_SFLOAT,
+                    .offset   = offsetof(Vertex, pos),
+                },
+                {
+                    .location = 1,
+                    .binding  = 0,
+                    .format   = VK_FORMAT_R32G32B32_SFLOAT,
+                    .offset   = offsetof(Vertex, color),
+                },
+            };
+
             VkPipelineVertexInputStateCreateInfo vertexInputInfo = {
                 .sType                           = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
-                .vertexBindingDescriptionCount   = 0,
-                .pVertexBindingDescriptions      = nullptr,
-                .vertexAttributeDescriptionCount = 0,
-                .pVertexAttributeDescriptions    = nullptr,
+                .vertexBindingDescriptionCount   = static_cast<uint32_t>(bindingDescriptions.size()),
+                .pVertexBindingDescriptions      = bindingDescriptions.data(),
+                .vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size()),
+                .pVertexAttributeDescriptions    = attributeDescriptions.data(),
             };
 
 
@@ -167,12 +215,29 @@ namespace golias {
             pipelineDesc.ColorBlendAttachment = colorBlendAttachment;
             pipelineDesc.Layout               = pipelineLayoutInfo;
             pipelineDesc.Shaders              = {
-                std::make_shared<VulkanShader>(mDevice, "res/internal/shaders/vulkan/test.spv", "vertex_main", VK_SHADER_STAGE_VERTEX_BIT),
-                std::make_shared<VulkanShader>(mDevice, "res/internal/shaders/vulkan/test.spv", "fragment_main", VK_SHADER_STAGE_FRAGMENT_BIT),
+                // TODO: fix later, currently this reads from disk 2x
+                VulkanShader::CreateFromFile(
+                    mDevice, {"res/internal/shaders/vulkan/test.spv", ShaderStage::Vertex, "vertex_main", ShaderSourceType::SPIRV}),
+                VulkanShader::CreateFromFile(
+                    mDevice, {"res/internal/shaders/vulkan/test.spv", ShaderStage::Fragment, "fragment_main", ShaderSourceType::SPIRV}),
             };
 
             pipeline->CreateGraphicsPipeline(pipelineDesc);
             mPipeline = pipeline;
+        }
+
+        
+        {
+            uint32_t imageCount = mSwapchain->GetImageCount();
+            mInFlightFences.resize(imageCount);
+            mImageAvailableSemaphores.resize(imageCount);
+            mRenderFinishedSemaphores.resize(imageCount);
+
+            for (uint32_t i = 0; i < imageCount; ++i) {
+                mInFlightFences[i]           = std::make_shared<VulkanFence>(mDevice, true);
+                mImageAvailableSemaphores[i] = std::make_shared<VulkanSemaphore>(mDevice);
+                mRenderFinishedSemaphores[i] = std::make_shared<VulkanSemaphore>(mDevice);
+            }
         }
 
         RecordCmdBuffers();
@@ -222,6 +287,11 @@ namespace golias {
             mCommandBuffers[i]->BeginRenderPass(renderPassInfo);
             mCommandBuffers[i]->BindGraphicsPipeline(mPipeline);
 
+            VkBuffer vertexBuffers[] = {mVertexBuffer->GetHandle()};
+            VkDeviceSize offsets[]      = {0};
+            vkCmdBindVertexBuffers(mCommandBuffers[i]->GetHandle(), 0, 1, vertexBuffers, offsets);
+
+
             VkViewport viewport = {
                 .x        = 0.0f,
                 .y        = 0.0f,
@@ -231,16 +301,16 @@ namespace golias {
                 .maxDepth = 1.0f,
             };
 
-            vkCmdSetViewport(mCommandBuffers[i]->GetHandle(), 0, 1, &viewport);
+            mCommandBuffers[i]->SetViewport(viewport);
 
             VkRect2D scissor = {
                 .offset = {0, 0},
                 .extent = extent,
             };
 
-            vkCmdSetScissor(mCommandBuffers[i]->GetHandle(), 0, 1, &scissor);
+            mCommandBuffers[i]->SetScissor(scissor);
 
-            mCommandBuffers[i]->Draw(3);
+            mCommandBuffers[i]->Draw(vertices.size());
             mCommandBuffers[i]->EndRenderPass();
 
             mCommandBuffers[i]->End();
@@ -248,40 +318,64 @@ namespace golias {
     }
 
     void Application::RenderFrame() {
+
+        mInFlightFences[mCurrentFrame]->Wait();
+
         uint32_t imageIndex = 0;
-        VkResult result =
-            vkAcquireNextImageKHR(mDevice->GetHandle(), mSwapchain->GetHandle(), UINT64_MAX, VK_NULL_HANDLE, VK_NULL_HANDLE, &imageIndex);
+        VkResult result     = vkAcquireNextImageKHR(mDevice->GetHandle(),
+                                                    mSwapchain->GetHandle(),
+                                                    UINT64_MAX,
+                                                    mImageAvailableSemaphores[mCurrentFrame]->GetHandle(),
+                                                    VK_NULL_HANDLE,
+                                                    &imageIndex);
+
+        VK_CHECK_RESULT(result);
+
+        mInFlightFences[mCurrentFrame]->Reset();
 
         VkCommandBuffer commandBuffer = mCommandBuffers[imageIndex]->GetHandle();
 
+        VkSemaphore waitSemaphores[]   = {mImageAvailableSemaphores[mCurrentFrame]->GetHandle()};
+        VkSemaphore signalSemaphores[] = {mRenderFinishedSemaphores[mCurrentFrame]->GetHandle()};
+
+        VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+
         VkSubmitInfo submitInfo = {
-            .sType              = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-            .commandBufferCount = 1,
-            .pCommandBuffers    = &commandBuffer,
+            .sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+            .waitSemaphoreCount   = 1,
+            .pWaitSemaphores      = waitSemaphores,
+            .pWaitDstStageMask    = waitStages,
+            .commandBufferCount   = 1,
+            .pCommandBuffers      = &commandBuffer,
+            .signalSemaphoreCount = 1,
+            .pSignalSemaphores    = signalSemaphores,
         };
 
-        VkQueue graphicsQueue = mDevice->GetGraphicsQueue();
+        result = vkQueueSubmit(mDevice->GetGraphicsQueue(), 1, &submitInfo, mInFlightFences[mCurrentFrame]->GetHandle());
+        VK_CHECK_RESULT(result);
 
-        if (vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE) != VK_SUCCESS) {
-            LOG_ERROR("Failed to submit draw command buffer!");
-        }
-        
-        vkQueueWaitIdle(graphicsQueue);
-
-        VkSwapchainKHR swapchain = mSwapchain->GetHandle();
+        VkSwapchainKHR swapchains[] = {mSwapchain->GetHandle()};
 
         VkPresentInfoKHR presentInfo = {
-            .sType          = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
-            .swapchainCount = 1,
-            .pSwapchains    = &swapchain,
-            .pImageIndices  = &imageIndex,
+            .sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+            .waitSemaphoreCount = 1,
+            .pWaitSemaphores    = signalSemaphores,
+            .swapchainCount     = 1,
+            .pSwapchains        = swapchains,
+            .pImageIndices      = &imageIndex,
         };
 
-        vkQueuePresentKHR(mDevice->GetPresentQueue(), &presentInfo);
+        result = vkQueuePresentKHR(mDevice->GetPresentQueue(), &presentInfo);
+        VK_CHECK_RESULT(result);
+
+        mCurrentFrame = (mCurrentFrame + 1) % mSwapchain->GetImageCount();
     }
 
     void Application::Shutdown() {
         mCommandBuffers.clear();
+        mInFlightFences.clear();
+        mImageAvailableSemaphores.clear();
+        mRenderFinishedSemaphores.clear();
         mPipeline.reset();
         mRenderPass.reset();
         mSwapchain.reset();
