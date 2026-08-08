@@ -1,8 +1,10 @@
 #include "graphics/rhi/vulkan/vk_command_buffer.h"
 
+#include "graphics/rhi/vulkan/vk_buffer.h"
 #include "graphics/rhi/vulkan/vk_command_pool.h"
 #include "graphics/rhi/vulkan/vk_device.h"
-#include "graphics/rhi/vulkan/vk_pipeline.h"
+#include "graphics/rhi/vulkan/vk_graphics_pipeline.h"
+#include "graphics/rhi/vulkan/vk_uniform_buffer.h"
 
 namespace golias {
 
@@ -16,14 +18,12 @@ namespace golias {
             .level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
             .commandBufferCount = 1};
 
-
         if (vkAllocateCommandBuffers(mDevice->GetHandle(), &allocInfo, &mCommandBuffer) != VK_SUCCESS) {
             LOG_WARN("Failed to allocate command buffer!");
         }
 
         LOG_INFO("Allocated command buffer: {}", (void*) mCommandBuffer);
     }
-
 
     void VulkanCommandBuffer::Begin(VkCommandBufferUsageFlags flags) {
         VkCommandBufferBeginInfo beginInfo = {
@@ -81,12 +81,44 @@ namespace golias {
         vkCmdEndRenderPass(mCommandBuffer);
     }
 
-    void VulkanCommandBuffer::BindGraphicsPipeline(const Ref<VulkanPipeline>& pipeline) {
-        vkCmdBindPipeline(mCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->GetHandle());
+    void VulkanCommandBuffer::BindGraphicsPipeline(const Ref<GraphicsPipeline>& pipeline) {
+        auto vkPipeline = static_pointer_cast<VulkanGraphicsPipeline>(pipeline);
+        mPipelineLayout = vkPipeline->GetLayout();
+        vkCmdBindPipeline(mCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vkPipeline->GetHandle());
+    }
+
+    void VulkanCommandBuffer::BindUniformBufferSet(const Ref<UniformBufferSet>& uniformBufferSet, uint32_t frameIndex) {
+        auto vkUniformBufferSet = static_pointer_cast<VulkanUniformBufferSet>(uniformBufferSet);
+
+        VkPipelineLayout pipelineLayout = mPipelineLayout;
+        if (pipelineLayout == VK_NULL_HANDLE) {
+            LOG_FATAL("Cannot bind uniform buffer set: no pipeline bound yet!");
+        }
+
+        VkDescriptorSet descriptorSet = vkUniformBufferSet->GetDescriptorSet(frameIndex);
+        vkCmdBindDescriptorSets(mCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
+    }
+
+    void VulkanCommandBuffer::BindVertexBuffer(const Ref<Buffer>& buffer) {
+        auto vkBuffer = static_pointer_cast<VulkanBuffer>(buffer);
+
+        VkBuffer vertexBuffers[] = {vkBuffer->GetHandle()};
+        VkDeviceSize offsets[]   = {0};
+        vkCmdBindVertexBuffers(mCommandBuffer, 0, 1, vertexBuffers, offsets);
+    }
+
+    void VulkanCommandBuffer::BindIndexBuffer(const Ref<Buffer>& buffer) {
+        auto vkBuffer = static_pointer_cast<VulkanBuffer>(buffer);
+        vkCmdBindIndexBuffer(mCommandBuffer, vkBuffer->GetHandle(), 0, VK_INDEX_TYPE_UINT32);
     }
 
     void VulkanCommandBuffer::Draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance) {
         vkCmdDraw(mCommandBuffer, vertexCount, instanceCount, firstVertex, firstInstance);
+    }
+
+    void VulkanCommandBuffer::DrawIndexed(
+        uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset, uint32_t firstInstance) {
+        vkCmdDrawIndexed(mCommandBuffer, indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
     }
 
     VulkanCommandBuffer::~VulkanCommandBuffer() {
