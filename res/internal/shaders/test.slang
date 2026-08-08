@@ -1,31 +1,36 @@
-// [shader("vertex")]
-// float4 vertex_main(uint vertexID: SV_VertexID) : SV_Position {
-//     static const float2 positions[3] = { float2(0, -0.5), float2(0.5, 0.5), float2(-0.5, 0.5) };
 
-//     return float4(positions[vertexID], 0.0, 1.0);
-// }
+struct Camera {
+    float4x4 view;
+    float4x4 projection;
+};
 
-// [shader("fragment")]
-// float4 fragment_main() : SV_Target {
-//     return float4(1, 0, 0, 1);
-// }
+struct Object {
+    float4x4 model;
+};
 
 
 struct VertexInput {
-   [[vk::location(0)]] float2 pos : POSITION;
-   [[vk::location(1)]] float3 color : COLOR;
+    float3 pos : POSITION;
+    float3 color : COLOR;
 };
 
 struct VertexOutput {
     float4 pos : SV_POSITION;
-    [[vk::location(1)]] float3 color : COLOR;
+    float3 color : COLOR;
 };
+
+ConstantBuffer<Camera> camera : register(b0);
+ConstantBuffer<Object> object : register(b1);
 
 [shader("vertex")]
 VertexOutput vertex_main(VertexInput input) {
     VertexOutput output;
-    output.pos = float4(input.pos, 0.0, 1.0);
+    float4 worldPos = mul(object.model, float4(input.pos, 1.0));
+    float4 viewPos = mul(camera.view, worldPos);
+
+    output.pos = mul(camera.projection, viewPos);
     output.color = input.color;
+
     return output;
 }
 

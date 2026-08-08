@@ -13,7 +13,6 @@ from pathlib import Path
 SCRIPT_DIR = Path(__file__).resolve().parent
 ENGINE_ROOT = SCRIPT_DIR.parent.parent
 SHADER_SRC_DIR = ENGINE_ROOT / "res" / "internal" / "shaders"
-BUILD_DIR = ENGINE_ROOT / "build"
 SHADER_EXT = ".slang"
 
 
@@ -22,7 +21,7 @@ BACKENDS = {
         "target": "spirv",
         "profile": "spirv_1_5",
         "out_ext": ".spv",
-        "extra": ["-emit-spirv-directly"],
+        "extra": ["-emit-spirv-directly","-fvk-b-shift 0"],
         "ready": True,
         "host_platforms": None,
     },
@@ -119,7 +118,9 @@ def cmd_bake_shaders(args):
         print(f"No {SHADER_EXT} files found under {SHADER_SRC_DIR}")
         return
 
-    out_root = BUILD_DIR / "shaders" / backend_name
+    # Baked bytecode lives next to the source shader (res/internal/shaders/<backend>)
+    # so the engine can load it at runtime using a stable asset path.
+    out_root = SHADER_SRC_DIR / backend_name
     out_root.mkdir(parents=True, exist_ok=True)
 
     print(f"Baking shaders  backend={backend_name}  target={backend['target']}")
