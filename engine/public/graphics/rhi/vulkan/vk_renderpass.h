@@ -1,4 +1,5 @@
 #pragma once
+#include "graphics/rhi/rhi_renderpass.h"
 #include "vk_common.h"
 
 namespace golias {
@@ -9,32 +10,33 @@ namespace golias {
         VulkanSubPass()  = default;
         ~VulkanSubPass() = default;
 
-        void AddColorAttachment(const VkAttachmentReference& attachment);
+        void AddColorAttachment(const AttachmentReference& attachment);
 
-        void AddInputAttachment(const VkAttachmentReference& attachment);
+        void AddInputAttachment(const AttachmentReference& attachment);
 
-        void SetDepthStencilAttachment(const VkAttachmentReference& attachment);
+        void SetDepthStencilAttachment(const AttachmentReference& attachment);
 
-        void SetResolveAttachment(const VkAttachmentReference& attachment);
+        void SetResolveAttachment(const AttachmentReference& attachment);
 
-        const std::vector<VkAttachmentReference>& GetColorAttachments() const;
+        const std::vector<AttachmentReference>& GetColorAttachments() const;
 
-        const std::vector<VkAttachmentReference>& GetInputAttachments() const;
-        
-        const std::optional<VkAttachmentReference>& GetDepthStencilAttachment() const;
+        const std::vector<AttachmentReference>& GetInputAttachments() const;
 
-        const std::optional<VkAttachmentReference>& GetResolveAttachment() const;
-        
+        const std::optional<AttachmentReference>& GetDepthStencilAttachment() const;
+
+        const std::optional<AttachmentReference>& GetResolveAttachment() const;
+
         void Validate() const;
 
     private:
-        std::vector<VkAttachmentReference> mColorAttachments         = {};
-        std::vector<VkAttachmentReference> mInputAttachments         = {};
-        std::optional<VkAttachmentReference> mDepthStencilAttachment = std::nullopt;
-        std::optional<VkAttachmentReference> mResolveAttachment      = std::nullopt;
+        std::vector<AttachmentReference> mColorAttachments         = {};
+        std::vector<AttachmentReference> mInputAttachments         = {};
+        std::optional<AttachmentReference> mDepthStencilAttachment = std::nullopt;
+        std::optional<AttachmentReference> mResolveAttachment      = std::nullopt;
     };
 
     class VulkanDevice;
+
 
     class VulkanRenderPass {
     public:
@@ -42,6 +44,11 @@ namespace golias {
         ~VulkanRenderPass();
 
         void AddAttachment(const VkAttachmentDescription& attachment);
+
+        // translates a DepthStencilAttachment view
+        // descriptor (texture + load/store ops + access) into a native
+        // attachment description.
+        void AddAttachment(const DepthStencilAttachment& attachment);
 
         void AddSubPass(const VulkanSubPass& subpass);
 
@@ -60,7 +67,7 @@ namespace golias {
         VkRenderPass mRenderPass = VK_NULL_HANDLE;
 
         std::vector<VkAttachmentDescription> mAttachmentDescriptions = {};
-        std::vector<VulkanSubPass> mSubpasses                              = {};
+        std::vector<VulkanSubPass> mSubpasses                        = {};
         std::vector<VkSubpassDependency> mDependencies               = {};
     };
 } // namespace golias

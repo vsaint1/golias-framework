@@ -1,5 +1,6 @@
 #pragma once
 #include "vk_common.h"
+#include "graphics/rhi/rhi_texture.h"
 
 namespace golias {
 
@@ -30,7 +31,7 @@ namespace golias {
 
         const std::vector<VkImage>& GetSwapchainImages() const;
 
-        void CreateFramebuffer(const Ref<VulkanRenderPass>& renderPass);
+        void CreateFramebuffer(const Ref<VulkanRenderPass>& renderPass, const Ref<Texture>& depthTexture = nullptr);
 
         const std::vector<VkFramebuffer>& GetSwapchainFramebuffers() const {
             return mSwapchainFramebuffers;

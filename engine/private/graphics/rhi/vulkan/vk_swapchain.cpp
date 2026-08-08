@@ -2,6 +2,7 @@
 
 #include "core/window.h"
 #include "graphics/rhi/vulkan/vk_device.h"
+#include "graphics/rhi/vulkan/vk_texture.h"
 #include "graphics/rhi/vulkan/vk_renderpass.h"
 #include "graphics/rhi/vulkan/vk_window_surface.h"
 
@@ -137,17 +138,25 @@ namespace golias {
         return mSwapchainImages;
     }
 
-    void VulkanSwapchain::CreateFramebuffer(const Ref<VulkanRenderPass>& renderPass) {
+    void VulkanSwapchain::CreateFramebuffer(const Ref<VulkanRenderPass>& renderPass, const Ref<Texture>& depthTexture) {
         mSwapchainFramebuffers.resize(mImageCount);
 
+        VkImageView depthImageView = VK_NULL_HANDLE;
+        if (depthTexture) {
+            depthImageView = std::static_pointer_cast<VulkanTexture>(depthTexture)->GetImageView();
+        }
+
         for (size_t i = 0; i < mImageCount; i++) {
-            VkImageView attachments[] = {mSwapchainImageViews[i]};
+            std::vector<VkImageView> attachments = {mSwapchainImageViews[i]};
+            if (depthImageView != VK_NULL_HANDLE) {
+                attachments.push_back(depthImageView);
+            }
 
             VkFramebufferCreateInfo framebufferInfo = {
                 .sType           = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
                 .renderPass      = renderPass->GetHandle(),
-                .attachmentCount = 1,
-                .pAttachments    = attachments,
+                .attachmentCount = static_cast<uint32_t>(attachments.size()),
+                .pAttachments    = attachments.data(),
                 .width           = mExtent.width,
                 .height          = mExtent.height,
                 .layers          = 1,
