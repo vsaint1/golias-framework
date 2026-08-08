@@ -1,49 +1,36 @@
 #pragma once
 #include "vk_common.h"
+#include "graphics/rhi/rhi_shader.h"
 
 namespace golias {
 
     class VulkanDevice;
 
-    enum class ShaderStage { Vertex, Fragment, Geometry, Compute };
+    VkShaderStageFlagBits ConvertShaderStage(ShaderStage stage);
 
-    enum class ShaderSourceType { GLSL, HLSL, SPIRV };
-
-    struct ShaderDesc {
-        std::string path;
-
-        ShaderStage stage = ShaderStage::Vertex;
-
-        std::string entryPoint = "main";
-
-        ShaderSourceType source = ShaderSourceType::SPIRV;
-    };
-
-
-
-    class VulkanShader  {
+    class VulkanShader : public Shader {
     public:
-        VulkanShader()= default;
-        ~VulkanShader();
+        VulkanShader() = default;
+        ~VulkanShader() override;
 
-        static Ref<VulkanShader> CreateFromFile(Ref<VulkanDevice> device, ShaderDesc desc);
+        static Ref<VulkanShader> CreateFromFile(Ref<VulkanDevice> device, const ShaderDesc& desc);
+
+        ShaderStage GetStage() const override;
 
         VkShaderModule GetHandle() const;
 
-        VkShaderStageFlagBits GetStage() const;
+        VkShaderStageFlagBits GetStageFlagBits() const;
 
         const char* GetEntryPoint() const;
 
     private:
         std::vector<char> ReadFile(const std::string& path);
 
-        VkShaderStageFlagBits ConvertShaderStage(ShaderStage stage) const;
-
     private:
         Ref<VulkanDevice> mDevice;
         VkShaderModule mShaderModule = VK_NULL_HANDLE;
 
-        VkShaderStageFlagBits mStage = VK_SHADER_STAGE_VERTEX_BIT;
+        ShaderStage mStage = ShaderStage::Vertex;
         std::string mEntryPoint;
     };
 } // namespace golias

@@ -38,12 +38,18 @@ namespace golias {
 
         uint32_t FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) const;
 
+        VkFormat FindDepthFormat() const;
+
+        bool HasStencilComponent(VkFormat format) const;
+
     private:
         void PickPhysicalDevice();
         void CreateLogicalDevice();
         void SetupDeviceQueues();
 
         const char* GetVendorName(uint32_t vendorID) const;
+
+        VkFormat FindSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features) const;
 
     private:
         Ref<VulkanInstance> mInstance     = nullptr;

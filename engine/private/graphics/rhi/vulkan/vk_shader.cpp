@@ -4,7 +4,7 @@
 
 namespace golias {
 
-    VkShaderStageFlagBits VulkanShader::ConvertShaderStage(ShaderStage stage) const {
+    VkShaderStageFlagBits ConvertShaderStage(ShaderStage stage) {
         switch (stage) {
         case ShaderStage::Vertex:
             return VK_SHADER_STAGE_VERTEX_BIT;
@@ -20,18 +20,21 @@ namespace golias {
         }
     }
 
+    ShaderStage VulkanShader::GetStage() const {
+        return mStage;
+    }
+
     VkShaderModule VulkanShader::GetHandle() const {
         return mShaderModule;
     }
 
-    VkShaderStageFlagBits VulkanShader::GetStage() const {
-        return mStage;
+    VkShaderStageFlagBits VulkanShader::GetStageFlagBits() const {
+        return ConvertShaderStage(mStage);
     }
 
     const char* VulkanShader::GetEntryPoint() const {
         return mEntryPoint.c_str();
     }
-
 
     std::vector<char> VulkanShader::ReadFile(const std::string& path) {
         std::ifstream file(path, std::ios::ate | std::ios::binary);
@@ -57,12 +60,12 @@ namespace golias {
         }
     }
 
-    Ref<VulkanShader> VulkanShader::CreateFromFile(Ref<VulkanDevice> device, ShaderDesc desc) {
-        Ref<VulkanShader> shader = std::make_shared<VulkanShader>();
-        shader->mDevice = device;
-        shader->mEntryPoint = desc.entryPoint;
-        shader->mStage = shader->ConvertShaderStage(desc.stage);
-        std::vector<char> shaderCode = shader->ReadFile(desc.path);
+    Ref<VulkanShader> VulkanShader::CreateFromFile(Ref<VulkanDevice> device, const ShaderDesc& desc) {
+        Ref<VulkanShader> shader    = std::make_shared<VulkanShader>();
+        shader->mDevice             = device;
+        shader->mEntryPoint         = desc.EntryPoint;
+        shader->mStage              = desc.Stage;
+        std::vector<char> shaderCode = shader->ReadFile(desc.Path);
 
         VkShaderModuleCreateInfo createInfo = {
             .sType    = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
@@ -75,7 +78,7 @@ namespace golias {
         VkResult result = vkCreateShaderModule(shader->mDevice->GetHandle(), &createInfo, nullptr, &shader->mShaderModule);
         VK_CHECK_RESULT(result);
 
-        LOG_INFO("Created shader module for {} | entry point {} | stage {}", desc.path, desc.entryPoint, string_VkShaderStageFlagBits(shader->mStage));
+        LOG_INFO("Created shader module for {} | entry point {} | stage {}", desc.Path, desc.EntryPoint, string_VkShaderStageFlagBits(shader->GetStageFlagBits()));
 
         return shader;
     }
