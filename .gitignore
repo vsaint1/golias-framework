@@ -16,6 +16,10 @@ cmake-build-debug
 .xmake/
 
 __pycache__/
+res/internal/shaders/vulkan/*
+res/internal/shaders/glsl/*
+res/internal/shaders/d3d12/*
+res/internal/shaders/metal/*
 
 jniLibs/
 

@@ -19,10 +19,8 @@ namespace golias {
 
         virtual void SetData(const void* data, size_t size, size_t offset = 0) = 0;
 
-        virtual size_t GetSize() const  = 0;
+        virtual size_t GetSize() const = 0;
 
         virtual BufferType GetType() const = 0;
-
-        static Ref<Buffer> Create(const BufferDesc& desc);
     };
 } // namespace golias
