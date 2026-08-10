@@ -85,6 +85,43 @@
     std::abort()
 
 
+// OS helper
+
+#if defined(_WIN32) || defined(_WIN64)
+
+    #define GOLIAS_PLATFORM_WINDOWS
+
+#elif defined(__APPLE__)
+
+    #define GOLIAS_PLATFORM_APPLE 1
+
+    #include <TargetConditionals.h>
+
+    #if TARGET_OS_OSX
+        #define GOLIAS_PLATFORM_OSX 1
+    #elif TARGET_OS_IOS
+        #define GOLIAS_PLATFORM_IOS 1
+    #elif TARGET_OS_TV
+        #define GOLIAS_PLATFORM_TVOS 1
+    #elif TARGET_OS_WATCH
+        #define GOLIAS_PLATFORM_WATCHOS 1
+    #endif
+
+
+#elif defined(__ANDROID__)
+    #define GOLIAS_PLATFORM_ANDROID 1
+
+#elif defined(__linux__)
+    #define GOLIAS_PLATFORM_LINUX 1
+
+#elif defined(__EMSCRIPTEN__)
+    #define GOLIAS_PLATFORM_EMSCRIPTEN 1
+
+#else
+    #error "Unsupported platform"
+
+#endif
+
 namespace golias {
 
 
