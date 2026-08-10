@@ -13,7 +13,7 @@ from pathlib import Path
 SCRIPT_DIR = Path(__file__).resolve().parent
 ENGINE_ROOT = SCRIPT_DIR.parent.parent
 SHADER_SRC_DIR = ENGINE_ROOT / "res" / "internal" / "shaders"
-SHADER_EXT = ".slang"
+SHADER_EXTS = (".hlsl", ".slang")
 
 
 BACKENDS = {
@@ -21,7 +21,20 @@ BACKENDS = {
         "target": "spirv",
         "profile": "spirv_1_5",
         "out_ext": ".spv",
-        "extra": ["-emit-spirv-directly","-fvk-b-shift 0"],
+        # Shaders are written in backend-agnostic HLSL with register() syntax.
+        # These flags map the D3D registers/spaces to a concrete Vulkan layout:
+        #   register(bN)      -> DescriptorSet 0, Binding N
+        #   register(tN, s1)  -> DescriptorSet 1, Binding N
+        #   register(sN, s1)  -> DescriptorSet 1, Binding N + 1
+        # -fvk-use-entrypoint-name keeps the source function name (e.g. vertex_main)
+        # as the SPIR-V entry point so the engine can look it up at runtime.
+        "extra": [
+            "-emit-spirv-directly",
+            "-fvk-use-entrypoint-name",
+            "-fvk-b-shift", "0", "0",
+            "-fvk-t-shift", "0", "1",
+            "-fvk-s-shift", "1", "1",
+        ],
         "ready": True,
         "host_platforms": None,
     },
@@ -97,7 +110,8 @@ def find_shader_sources() -> list[Path]:
     if not SHADER_SRC_DIR.is_dir():
         print(f"Error: Shader source directory not found: {SHADER_SRC_DIR}", file=sys.stderr)
         sys.exit(1)
-    return sorted(SHADER_SRC_DIR.rglob(f"*{SHADER_EXT}"))
+    sources = [p for ext in SHADER_EXTS for p in SHADER_SRC_DIR.rglob(f"*{ext}")]
+    return sorted(set(sources))
 
 
 def is_stale(src: Path, out: Path) -> bool:
@@ -115,7 +129,7 @@ def cmd_bake_shaders(args):
 
     sources = find_shader_sources()
     if not sources:
-        print(f"No {SHADER_EXT} files found under {SHADER_SRC_DIR}")
+        print(f"No {', '.join(SHADER_EXTS)} files found under {SHADER_SRC_DIR}")
         return
 
     # Baked bytecode lives next to the source shader (res/internal/shaders/<backend>)
@@ -175,7 +189,7 @@ def cmd_bake_shaders(args):
         sys.exit(1)
 
 def register(subparsers):
-    p = subparsers.add_parser("shaders", help=f"Compile {SHADER_EXT} shaders from res/internal/shaders")
+    p = subparsers.add_parser("shaders", help=f"Compile {'/'.join(SHADER_EXTS)} shaders from res/internal/shaders")
     p.add_argument(
         "--backend", "-b",
         choices=list(BACKENDS.keys()),
