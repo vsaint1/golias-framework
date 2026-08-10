@@ -10,10 +10,6 @@ namespace golias {
         mMesh = std::make_shared<MeshData>(mesh);
     }
 
-    void MeshFilter::SetMesh(PrimitiveType type) {
-        SetMesh(MeshLibrary::Create(type));
-    }
-
     const Ref<MeshData>& MeshFilter::GetMesh() const {
         return mMesh;
     }

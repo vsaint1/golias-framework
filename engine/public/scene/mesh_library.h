@@ -1,16 +1,18 @@
 #pragma once
 #include "stdafx.h"
+
 #include <glm/glm.hpp>
 
 namespace golias {
 
-   
+
     struct Vertex {
         glm::vec3 Position;
         glm::vec3 Color;
+        glm::vec2 UV;
     };
 
-    
+
     struct MeshData {
         std::vector<Vertex> Vertices;
         std::vector<uint32_t> Indices;
@@ -22,17 +24,27 @@ namespace golias {
 
     // Built-in primitives the mesh library can generate procedurally.
     enum class PrimitiveType {
-        Cube,     // unit cube, per-face colors
-        Quad,     // axis-aligned quad on the XY plane, facing +Z
-        Plane,    // axis-aligned plane on the XZ plane
-        Sphere,   // UV sphere
+        Cube, // unit cube, per-face colors
+        Quad, // axis-aligned quad on the XY plane, facing +Z
+        Plane, // axis-aligned plane on the XZ plane
+        Sphere, // UV sphere
         Cylinder, // axis-aligned cylinder on Y (with caps)
-        Capsule,  // Unity-style capsule (cylinder + hemispheres) on Y
-        Torus,    // ring lying on the XZ plane
+        Capsule, // Unity-style capsule (cylinder + hemispheres) on Y
+        Torus, // ring lying on the XZ plane
     };
 
-    
-    namespace MeshLibrary {
+    class MeshLibrary {
+    public:
+        MeshLibrary();
+        ~MeshLibrary();
+
+        MeshData Get(PrimitiveType type);
+
+    private:
+        std::unordered_map<PrimitiveType, MeshData> mMeshes = {};
+    };
+
+    namespace internal {
 
         // Unit cube (size 1) centered at the origin.
         MeshData CreateCube(float size = 1.0f);
@@ -61,6 +73,6 @@ namespace golias {
         // Dispatcher for the built-in primitives (default parameters).
         MeshData Create(PrimitiveType type);
 
-    } // namespace MeshLibrary
+    } // namespace internal
 
 } // namespace golias

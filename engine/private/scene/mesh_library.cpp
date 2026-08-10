@@ -4,7 +4,7 @@
 
 namespace golias {
 
-    namespace MeshLibrary {
+    namespace internal {
 
         MeshData CreateCube(float size) {
             const float h = size * 0.5f;
@@ -12,35 +12,35 @@ namespace golias {
             MeshData mesh;
             mesh.Vertices = {
                 // -X side (red)
-                {{-h, -h, -h}, {1.0f, 0.0f, 0.0f}},
-                {{-h, -h, h},  {1.0f, 0.0f, 0.0f}},
-                {{-h, h, h},   {1.0f, 0.0f, 0.0f}},
-                {{-h, h, -h},  {1.0f, 0.0f, 0.0f}},
+                {{-h, -h, -h}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+                {{-h, -h, h},  {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+                {{-h, h, h},   {1.0f, 0.0f, 0.0f}, {1.0f, 1.0f}},
+                {{-h, h, -h},  {1.0f, 0.0f, 0.0f}, {0.0f, 1.0f}},
                 // +X side (green)
-                {{h, -h, h},   {0.0f, 1.0f, 0.0f}},
-                {{h, -h, -h},  {0.0f, 1.0f, 0.0f}},
-                {{h, h, -h},   {0.0f, 1.0f, 0.0f}},
-                {{h, h, h},    {0.0f, 1.0f, 0.0f}},
+                {{h, -h, h},   {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
+                {{h, -h, -h},  {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
+                {{h, h, -h},   {0.0f, 1.0f, 0.0f}, {1.0f, 1.0f}},
+                {{h, h, h},    {0.0f, 1.0f, 0.0f}, {0.0f, 1.0f}},
                 // -Z side (blue)
-                {{-h, -h, h},  {0.0f, 0.0f, 1.0f}},
-                {{h, -h, h},   {0.0f, 0.0f, 1.0f}},
-                {{h, h, h},    {0.0f, 0.0f, 1.0f}},
-                {{-h, h, h},   {0.0f, 0.0f, 1.0f}},
+                {{-h, -h, h},  {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f}},
+                {{h, -h, h},   {0.0f, 0.0f, 1.0f}, {1.0f, 0.0f}},
+                {{h, h, h},    {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+                {{-h, h, h},   {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
                 // +Z side (yellow)
-                {{h, -h, -h},  {1.0f, 1.0f, 0.0f}},
-                {{-h, -h, -h}, {1.0f, 1.0f, 0.0f}},
-                {{-h, h, -h},  {1.0f, 1.0f, 0.0f}},
-                {{h, h, -h},   {1.0f, 1.0f, 0.0f}},
+                {{h, -h, -h},  {1.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
+                {{-h, -h, -h}, {1.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
+                {{-h, h, -h},  {1.0f, 1.0f, 0.0f}, {1.0f, 1.0f}},
+                {{h, h, -h},   {1.0f, 1.0f, 0.0f}, {0.0f, 1.0f}},
                 // -Y side (cyan)
-                {{-h, h, -h},  {0.0f, 1.0f, 1.0f}},
-                {{-h, h, h},   {0.0f, 1.0f, 1.0f}},
-                {{h, h, h},    {0.0f, 1.0f, 1.0f}},
-                {{h, h, -h},   {0.0f, 1.0f, 1.0f}},
+                {{-h, h, -h},  {0.0f, 1.0f, 1.0f}, {0.0f, 0.0f}},
+                {{-h, h, h},   {0.0f, 1.0f, 1.0f}, {1.0f, 0.0f}},
+                {{h, h, h},    {0.0f, 1.0f, 1.0f}, {1.0f, 1.0f}},
+                {{h, h, -h},   {0.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
                 // +Y side (magenta)
-                {{h, -h, h},   {1.0f, 0.0f, 1.0f}},
-                {{-h, -h, h},  {1.0f, 0.0f, 1.0f}},
-                {{-h, -h, -h}, {1.0f, 0.0f, 1.0f}},
-                {{h, -h, -h},  {1.0f, 0.0f, 1.0f}},
+                {{h, -h, h},   {1.0f, 0.0f, 1.0f}, {0.0f, 0.0f}},
+                {{-h, -h, h},  {1.0f, 0.0f, 1.0f}, {1.0f, 0.0f}},
+                {{-h, -h, -h}, {1.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+                {{h, -h, -h},  {1.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
             };
 
             const uint32_t cubeIndices[] = {
@@ -66,6 +66,7 @@ namespace golias {
                     Vertex vertex;
                     vertex.Position = glm::vec3((vx - 0.5f) * width, 0.0f, (vz - 0.5f) * depth);
                     vertex.Color    = glm::vec3(vx, 0.5f, vz);
+                    vertex.UV       = glm::vec2(vx, vz);
                     mesh.Vertices.push_back(vertex);
                 }
             }
@@ -108,6 +109,8 @@ namespace golias {
                     vertex.Position = glm::vec3(sinPhi * cosTheta, cosPhi, sinPhi * sinTheta) * radius;
                     // Deterministic color derived from the surface normal.
                     vertex.Color = vertex.Position / radius * 0.5f + 0.5f;
+                    vertex.UV =
+                        glm::vec2(static_cast<float>(s) / static_cast<float>(segments), static_cast<float>(r) / static_cast<float>(rings));
                     mesh.Vertices.push_back(vertex);
                 }
             }
@@ -141,10 +144,10 @@ namespace golias {
             const glm::vec3 color(0.4f, 0.6f, 1.0f);
 
             mesh.Vertices = {
-                {{-hw, -hh, 0.0f}, color},
-                {{hw, -hh, 0.0f},  color},
-                {{hw, hh, 0.0f},   color},
-                {{-hw, hh, 0.0f},  color},
+                {{-hw, -hh, 0.0f}, color, {0.0f, 0.0f}},
+                {{hw, -hh, 0.0f},  color, {1.0f, 0.0f}},
+                {{hw, hh, 0.0f},   color, {1.0f, 1.0f}},
+                {{-hw, hh, 0.0f},  color, {0.0f, 1.0f}},
             };
 
             mesh.Indices = {0, 1, 2, 0, 2, 3};
@@ -170,10 +173,12 @@ namespace golias {
                 Vertex bottom;
                 bottom.Position = glm::vec3(sinTheta * radius, -halfHeight, cosTheta * radius);
                 bottom.Color    = color;
+                bottom.UV       = glm::vec2(static_cast<float>(s) / static_cast<float>(segments), 0.0f);
 
                 Vertex top;
                 top.Position = glm::vec3(sinTheta * radius, halfHeight, cosTheta * radius);
                 top.Color    = color;
+                top.UV       = glm::vec2(static_cast<float>(s) / static_cast<float>(segments), 1.0f);
 
                 mesh.Vertices.push_back(bottom);
                 mesh.Vertices.push_back(top);
@@ -199,14 +204,15 @@ namespace golias {
             const uint32_t topCenter = static_cast<uint32_t>(mesh.Vertices.size());
             mesh.Vertices.push_back({
                 {0.0f, halfHeight, 0.0f},
-                topColor
+                topColor, {0.0f, 0.0f}
             });
 
             for (uint32_t s = 0; s <= segments; ++s) {
                 const float theta = twoPi * static_cast<float>(s) / static_cast<float>(segments);
                 mesh.Vertices.push_back({
                     {glm::sin(theta) * radius, halfHeight, glm::cos(theta) * radius},
-                    topColor
+                    topColor,
+                    {static_cast<float>(s) / static_cast<float>(segments), 0.0f}
                 });
             }
 
@@ -221,14 +227,15 @@ namespace golias {
             const uint32_t bottomCenter = static_cast<uint32_t>(mesh.Vertices.size());
             mesh.Vertices.push_back({
                 {0.0f, -halfHeight, 0.0f},
-                bottomColor
+                bottomColor, {0.0f, 0.0f}
             });
 
             for (uint32_t s = 0; s <= segments; ++s) {
                 const float theta = twoPi * static_cast<float>(s) / static_cast<float>(segments);
                 mesh.Vertices.push_back({
                     {glm::sin(theta) * radius, -halfHeight, glm::cos(theta) * radius},
-                    bottomColor
+                    bottomColor,
+                    {static_cast<float>(s) / static_cast<float>(segments), 0.0f}
                 });
             }
 
@@ -281,6 +288,7 @@ namespace golias {
             // Bottom pole.
             rows.push_back({-halfCylinder - radius, 0.0f, -1.0f});
 
+            uint32_t rowIndex = 0;
             for (const Row& row : rows) {
                 for (uint32_t s = 0; s <= segments; ++s) {
                     const float theta    = twoPi * static_cast<float>(s) / static_cast<float>(segments);
@@ -299,8 +307,11 @@ namespace golias {
                     Vertex vertex;
                     vertex.Position = glm::vec3(cosTheta * row.RingRadius, row.Y, sinTheta * row.RingRadius);
                     vertex.Color    = normal * 0.5f + 0.5f;
+                    vertex.UV       = glm::vec2(static_cast<float>(s) / static_cast<float>(segments),
+                                                static_cast<float>(rowIndex) / static_cast<float>(rows.size() - 1));
                     mesh.Vertices.push_back(vertex);
                 }
+                ++rowIndex;
             }
 
             const uint32_t rowCount = static_cast<uint32_t>(rows.size());
@@ -348,6 +359,8 @@ namespace golias {
                     Vertex vertex;
                     vertex.Position = ringCenter + normal * minorRadius;
                     vertex.Color    = normal * 0.5f + 0.5f;
+                    vertex.UV =
+                        glm::vec2(static_cast<float>(j) / static_cast<float>(segments), static_cast<float>(i) / static_cast<float>(rings));
                     mesh.Vertices.push_back(vertex);
                 }
             }
@@ -393,6 +406,28 @@ namespace golias {
             return CreateCube();
         }
 
-    } // namespace MeshLibrary
+    } // namespace internal
+
+
+    MeshLibrary::MeshLibrary() {
+
+        mMeshes.reserve(7);
+
+        mMeshes[PrimitiveType::Cube]     = internal::CreateCube();
+        mMeshes[PrimitiveType::Quad]     = internal::CreateQuad();
+        mMeshes[PrimitiveType::Plane]    = internal::CreatePlane();
+        mMeshes[PrimitiveType::Sphere]   = internal::CreateSphere();
+        mMeshes[PrimitiveType::Cylinder] = internal::CreateCylinder();
+        mMeshes[PrimitiveType::Capsule]  = internal::CreateCapsule();
+        mMeshes[PrimitiveType::Torus]    = internal::CreateTorus();
+    }
+
+    MeshLibrary::~MeshLibrary() {
+    }
+
+    MeshData MeshLibrary::Get(PrimitiveType type) {
+        return mMeshes[type];
+    }
+
 
 } // namespace golias

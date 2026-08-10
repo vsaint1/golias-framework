@@ -19,9 +19,6 @@ namespace golias {
         // Copies `mesh` into a new shared asset.
         void SetMesh(const MeshData& mesh);
 
-        // Builds a shared asset from a built-in primitive.
-        void SetMesh(PrimitiveType type);
-
         const Ref<MeshData>& GetMesh() const;
 
     private:
