@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <chrono>
 #include <fstream>
 #include <functional>
 #include <iostream>
@@ -68,15 +69,13 @@
 
 #define LOG_TRACE(...) ::spdlog::trace("{} - {}", __FUNCTION__, fmt::format(__VA_ARGS__))
 
-
 #define LOG_INFO(...) ::spdlog::info("{} - {}", __FUNCTION__, fmt::format(__VA_ARGS__))
-
 
 #define LOG_WARN(...) ::spdlog::warn("{} - {}", __FUNCTION__, fmt::format(__VA_ARGS__))
 
+#define LOG_DEBUG(...) ::spdlog::debug("{} - {}", __FUNCTION__, fmt::format(__VA_ARGS__))
 
 #define LOG_ERROR(...) ::spdlog::error("{} - {}", __FUNCTION__, fmt::format(__VA_ARGS__))
-
 
 #define LOG_CRITICAL(...) ::spdlog::critical("{} - {}", __FUNCTION__, fmt::format(__VA_ARGS__))
 
