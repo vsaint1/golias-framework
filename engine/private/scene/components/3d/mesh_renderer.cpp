@@ -1,30 +1,38 @@
 #include "scene/components/3d/mesh_renderer.h"
 
-#include "scene/game_object.h"
 
 namespace golias {
 
-    void MeshRenderer::SetBuffers(const Ref<Buffer>& vertexBuffer, const Ref<Buffer>& indexBuffer, uint32_t indexCount) {
-        mVertexBuffer = vertexBuffer;
-        mIndexBuffer  = indexBuffer;
-        mIndexCount   = indexCount;
+    void MeshRenderer::SetMaterial(const Ref<MaterialInstance>& material) {
+        mMaterial = material;
     }
 
-    const Ref<Buffer>& MeshRenderer::GetVertexBuffer() const {
-        return mVertexBuffer;
+    const Ref<MaterialInstance>& MeshRenderer::GetMaterial() const {
+        return mMaterial;
     }
 
-    const Ref<Buffer>& MeshRenderer::GetIndexBuffer() const {
-        return mIndexBuffer;
+    void MeshRenderer::SetVisible(bool visible) {
+        mVisible = visible;
     }
 
-    uint32_t MeshRenderer::GetIndexCount() const {
-        return mIndexCount;
+    bool MeshRenderer::IsVisible() const {
+        return mVisible;
     }
 
-    glm::mat4 MeshRenderer::GetModelMatrix() const {
-        GameObject* owner = GetOwner();
-        return owner != nullptr ? owner->GetWorldTransform() : glm::mat4(1.0f);
+    bool MeshRenderer::GetCastShadows() const {
+        return mCastShadows;
+    }
+
+    void MeshRenderer::SetCastShadows(bool castShadows) {
+        mCastShadows = castShadows;
+    }
+
+    bool MeshRenderer::GetReceiveShadows() const {
+        return mReceiveShadows;
+    }
+
+    void MeshRenderer::SetReceiveShadows(bool receiveShadows) {
+        mReceiveShadows = receiveShadows;
     }
 
 } // namespace golias

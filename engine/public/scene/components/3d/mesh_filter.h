@@ -1,28 +1,20 @@
 #pragma once
-#include "stdafx.h"
 
+#include "graphics/render_resources.h"
 #include "scene/components/component.h"
-#include "scene/mesh_library.h"
 
 namespace golias {
 
-
-    
-    class MeshFilter : public Component {
+    // A component that holds a reference to a mesh resource. This component is used by the renderer to render the mesh in the scene.
+    class MeshFilter final : public Component {
     public:
-        MeshFilter() = default;
-        ~MeshFilter() override = default;
 
-        // Shares an existing mesh asset.
-        void SetMesh(const Ref<MeshData>& mesh);
+        void SetMesh(const Ref<Mesh>& mesh);
 
-        // Copies `mesh` into a new shared asset.
-        void SetMesh(const MeshData& mesh);
-
-        const Ref<MeshData>& GetMesh() const;
+        const Ref<Mesh>& GetMesh() const;
 
     private:
-        Ref<MeshData> mMesh = nullptr;
+        Ref<Mesh> mMesh = nullptr;
     };
 
 } // namespace golias

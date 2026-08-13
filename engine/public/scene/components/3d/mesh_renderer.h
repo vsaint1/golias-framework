@@ -1,34 +1,37 @@
 #pragma once
-#include "stdafx.h"
 
+#include "graphics/render_resources.h"
 #include "scene/components/component.h"
-#include "graphics/rhi/rhi_buffer.h"
-
-#include <glm/glm.hpp>
 
 namespace golias {
 
-
-    class MeshRenderer : public Component {
+    // A component that holds a reference to a material instance. This component is used by the renderer to render the mesh with the specified material in the scene.
+    class MeshRenderer final : public Component {
     public:
-        MeshRenderer() = default;
-        ~MeshRenderer() override = default;
+        void SetMaterial(const Ref<MaterialInstance>& material);
 
-        void SetBuffers(const Ref<Buffer>& vertexBuffer, const Ref<Buffer>& indexBuffer, uint32_t indexCount);
+        const Ref<MaterialInstance>& GetMaterial() const;
 
-        const Ref<Buffer>& GetVertexBuffer() const;
+        void SetVisible(bool visible);
 
-        const Ref<Buffer>& GetIndexBuffer() const;
+        bool IsVisible() const;
 
-        uint32_t GetIndexCount() const;
+        bool GetCastShadows() const;
 
-        // Convenience: world transform of the owning GameObject.
-        glm::mat4 GetModelMatrix() const;
+        void SetCastShadows(bool castShadows);
+
+        bool GetReceiveShadows() const;
+
+        void SetReceiveShadows(bool receiveShadows);
 
     private:
-        Ref<Buffer> mVertexBuffer = nullptr;
-        Ref<Buffer> mIndexBuffer  = nullptr;
-        uint32_t mIndexCount      = 0;
+        Ref<MaterialInstance> mMaterial = nullptr;
+
+        bool mVisible = true;
+
+        bool mCastShadows = true;
+
+        bool mReceiveShadows = true;
     };
 
 } // namespace golias

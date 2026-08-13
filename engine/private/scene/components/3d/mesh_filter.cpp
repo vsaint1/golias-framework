@@ -2,15 +2,11 @@
 
 namespace golias {
 
-    void MeshFilter::SetMesh(const Ref<MeshData>& mesh) {
+    void MeshFilter::SetMesh(const Ref<Mesh>& mesh) {
         mMesh = mesh;
     }
 
-    void MeshFilter::SetMesh(const MeshData& mesh) {
-        mMesh = std::make_shared<MeshData>(mesh);
-    }
-
-    const Ref<MeshData>& MeshFilter::GetMesh() const {
+    const Ref<Mesh>& MeshFilter::GetMesh() const {
         return mMesh;
     }
 
