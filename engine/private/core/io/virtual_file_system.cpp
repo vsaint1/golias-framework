@@ -1,9 +1,5 @@
 #include "core/io/virtual_file_system.h"
-
 #include "core/io/file.h"
-#include <cctype>
-#include <cstdlib>
-#include <filesystem>
 
 namespace golias {
 
@@ -166,6 +162,49 @@ namespace golias {
 
     bool VirtualFileSystem::Exists(const String& virtualPath) const {
         return file::Exists(Resolve(virtualPath));
+    }
+
+    std::vector<String> VirtualFileSystem::ListFiles(const String& virtualDirectory, bool recursive) const {
+        String normalized = virtualDirectory;
+        for (char& c : normalized) {
+            if (c == '\\') {
+                c = '/';
+            }
+        }
+
+        String scheme;
+        String rest;
+        SplitScheme(normalized, scheme, rest);
+        auto mount = mMounts.find(scheme);
+        if (mount == mMounts.end()) {
+            return {};
+        }
+
+        const std::filesystem::path root = Resolve(virtualDirectory);
+        if (!std::filesystem::is_directory(root)) {
+            return {};
+        }
+
+        std::vector<String> files;
+        if (recursive) {
+            for (const auto& entry : std::filesystem::recursive_directory_iterator(root)) {
+                if (entry.is_regular_file()) {
+                    const String relative = std::filesystem::relative(entry.path(), mount->second).generic_string();
+                    files.push_back(scheme + "://" + relative);
+                }
+            }
+
+        } else {
+            for (const auto& entry : std::filesystem::directory_iterator(root)) {
+                if (entry.is_regular_file()) {
+                    const String relative = std::filesystem::relative(entry.path(), mount->second).generic_string();
+                    files.push_back(scheme + "://" + relative);
+                }
+            }
+            
+        }
+
+        return files;
     }
 
     bool VirtualFileSystem::IsDirectory(const String& virtualPath) const {

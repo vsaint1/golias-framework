@@ -23,6 +23,8 @@ namespace golias {
 
         bool Exists(const String& virtualPath) const override;
 
+        std::vector<String> ListFiles(const String& virtualDirectory, bool recursive = true) const override;
+
         bool IsDirectory(const String& virtualPath) const override;
 
         std::optional<std::vector<uint8_t>> ReadAllBytes(const String& virtualPath) const override;
