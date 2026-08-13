@@ -13,8 +13,7 @@ namespace golias {
         RecalculateView();
     }
 
-    void Camera::Update(float /*deltaTime*/) {
-        // Re-derive the view from the (possibly hierarchy-composed) world
+    void Camera::Update(float deltaTime) {
         // transform of the owning GameObject each frame.
         RecalculateView();
     }
@@ -25,7 +24,8 @@ namespace golias {
             return;
         }
 
-        glm::mat4 view = glm::lookAt(owner->GetPosition(), target, glm::vec3(0.0f, 1.0f, 0.0f));
+        // convention: left-handed world, +X right, +Y up, +Z forward.
+        glm::mat4 view = glm::lookAtLH(owner->GetPosition(), target, glm::vec3(0.0f, 1.0f, 0.0f));
 
         glm::mat4 world = glm::inverse(view);
         glm::mat3 rotationBasis(world);
@@ -61,7 +61,7 @@ namespace golias {
     }
 
     void Camera::RecalculateProjection() {
-        mProjection = glm::perspective(glm::radians(mFov), mAspect, mNear, mFar);
+        mProjection = glm::perspectiveLH_ZO(glm::radians(mFov), mAspect, mNear, mFar);
 
         // Vulkan clip space: NDC has a flipped Y axis (y-down) compared to
         // OpenGL. Flip the projection so the world appears upright.
