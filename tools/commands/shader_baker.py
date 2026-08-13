@@ -21,19 +21,10 @@ BACKENDS = {
         "target": "spirv",
         "profile": "spirv_1_5",
         "out_ext": ".spv",
-        # Shaders are written in backend-agnostic HLSL with register() syntax.
-        # These flags map the D3D registers/spaces to a concrete Vulkan layout:
-        #   register(bN)      -> DescriptorSet 0, Binding N
-        #   register(tN, s1)  -> DescriptorSet 1, Binding N
-        #   register(sN, s1)  -> DescriptorSet 1, Binding N + 1
-        # -fvk-use-entrypoint-name keeps the source function name (e.g. vertex_main)
-        # as the SPIR-V entry point so the engine can look it up at runtime.
+       
         "extra": [
             "-emit-spirv-directly",
             "-fvk-use-entrypoint-name",
-            "-fvk-b-shift", "0", "0",
-            "-fvk-t-shift", "0", "1",
-            "-fvk-s-shift", "1", "1",
         ],
         "ready": True,
         "host_platforms": None,

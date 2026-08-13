@@ -29,6 +29,14 @@ add_subdirectory(tinyobj)
 
 add_subdirectory(mini_audio)
 
+# yaml-cpp (asset metadata sidecar serialization)
+set(YAML_CPP_MAIN_PROJECT OFF CACHE BOOL "" FORCE)
+set(YAML_CPP_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(YAML_CPP_BUILD_TOOLS OFF CACHE BOOL "" FORCE)
+set(YAML_CPP_BUILD_CONTRIB OFF CACHE BOOL "" FORCE)
+set(YAML_CPP_INSTALL OFF CACHE BOOL "" FORCE)
+add_subdirectory(yaml-cpp)
+
 
 add_library(thirdparty INTERFACE)
 
@@ -53,5 +61,6 @@ target_link_libraries(${PROJECT_NAME}  INTERFACE
         tinygltf
         tinyobjloader
         mini_audio
+        yaml-cpp
         Vulkan::Vulkan
 )
