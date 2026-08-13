@@ -12,11 +12,17 @@ namespace golias {
 
         void PollEvents();
         bool ShouldClose() const;
+        void SetTitle(const String& title);
 
         int GetWidth() const;
         int GetHeight() const;
 
-        GLFWwindow* GetNativeWindow() const;
+        std::vector<const char*> GetRequiredInstanceExtensions() const;
+        VkResult CreateSurface(VkInstance instance, VkSurfaceKHR* surface) const;
+
+        void GetFramebufferSize(int* width, int* height) const;
+
+        void WaitForEvents();
 
         std::function<void(int, int)> OnResize;
 
@@ -26,5 +32,6 @@ namespace golias {
         GLFWwindow* mWindow = nullptr;
         int mWidth          = 0;
         int mHeight         = 0;
+        String mTitle;
     };
 } // namespace golias
