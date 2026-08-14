@@ -43,10 +43,13 @@ add_library(thirdparty INTERFACE)
 target_include_directories(${PROJECT_NAME}  INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 
 # TODO: later we check platform and add vulkan only for supported platforms
-find_package(Vulkan REQUIRED)
+if(NOT APPLE)
+    find_package(Vulkan REQUIRED)
+    message(STATUS "Vulkan include: ${Vulkan_INCLUDE_DIRS}")
+    message(STATUS "Vulkan library: ${Vulkan_LIBRARIES}")
+endif()
 
-message(STATUS "Vulkan include: ${Vulkan_INCLUDE_DIRS}")
-message(STATUS "Vulkan library: ${Vulkan_LIBRARIES}")
+
 
 
 target_link_libraries(${PROJECT_NAME}  INTERFACE
@@ -62,5 +65,8 @@ target_link_libraries(${PROJECT_NAME}  INTERFACE
         tinyobjloader
         mini_audio
         yaml-cpp
-        Vulkan::Vulkan
 )
+
+if(NOT APPLE)
+    target_link_libraries(${PROJECT_NAME} INTERFACE Vulkan::Vulkan)
+endif()

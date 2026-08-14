@@ -8,8 +8,17 @@ add_definitions(-DENGINE_VERSION="${ENGINE_VERSION}")
 
 file(GLOB_RECURSE ENGINE_SOURCES CONFIGURE_DEPENDS "private/*.cpp" "private/*.c")
 
+if(APPLE)
+    file(GLOB_RECURSE METAL_SOURCES CONFIGURE_DEPENDS "private/graphics/rhi/metal/*.mm")
+    list(APPEND ENGINE_SOURCES ${METAL_SOURCES})
+endif()
+
 list(FILTER ENGINE_SOURCES EXCLUDE REGEX "engine/private/core/platform/.*")
 list(FILTER ENGINE_SOURCES EXCLUDE REGEX "engine/private/core/renderer/.mm")
+
+if(APPLE)
+    list(FILTER ENGINE_SOURCES EXCLUDE REGEX ".*/graphics/rhi/vulkan/.*")
+endif()
 
 
 

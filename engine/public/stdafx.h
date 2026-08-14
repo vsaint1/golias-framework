@@ -14,8 +14,9 @@
 #include <utility>
 #include <vector>
 
-#define GLFW_INCLUDE_VULKAN
 #include <glfw/glfw3.h>
+
+#define SPDLOG_NO_EXCEPTIONS
 #include <spdlog/fmt/fmt.h>
 #include <spdlog/spdlog.h>
 

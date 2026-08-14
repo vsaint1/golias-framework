@@ -5,7 +5,13 @@
 
 namespace golias {
 
-    enum class RHIBackend : uint8_t { ForwardPlus, Compatibility, Auto };
+    enum class RHIBackend : uint8_t {
+        Compatibility, // OpenGL 3.3 Core  | OpenGL ES 3.0
+        Vulkan, // Vulkan 1.3.x
+        Metal, // Metal 1.0+
+        DirectX12, // DirectX 12
+        Auto // Automatically select the best available backend for the platform
+    };
 
 #define GOLIAS_DEFINE_HANDLE(Name)                           \
     struct Name {                                            \
