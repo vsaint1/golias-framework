@@ -17,10 +17,13 @@ namespace golias {
         int GetWidth() const;
         int GetHeight() const;
 
-        std::vector<const char*> GetRequiredInstanceExtensions() const;
-        VkResult CreateSurface(VkInstance instance, VkSurfaceKHR* surface) const;
-
         void GetFramebufferSize(int* width, int* height) const;
+
+        void* GetNativeHandle() const;
+       
+        void* GetNativeViewHandle() const;
+       
+        void* GetGLFWHandle() const;
 
         void WaitForEvents();
 

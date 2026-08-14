@@ -1,5 +1,10 @@
 #include "core/window.h"
 
+#if defined(GOLIAS_PLATFORM_OSX)
+    #define GLFW_EXPOSE_NATIVE_COCOA
+    #include <GLFW/glfw3native.h>
+#endif
+
 namespace golias {
 
     void Window::framebuffer_size_callback(GLFWwindow* window, int width, int height) {
@@ -13,12 +18,14 @@ namespace golias {
     }
 
     Window::Window(int width, int height, const String title) : mWidth(width), mHeight(height), mTitle(title) {
+#if defined(GOLIAS_PLATFORM_OSX)
+        glfwInitHint(GLFW_PLATFORM, GLFW_PLATFORM_COCOA);
+#endif
         if (!glfwInit()) {
             LOG_FATAL("Failed to initialize GLFW.");
         }
 
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-
         mWindow = glfwCreateWindow(mWidth, mHeight, title.c_str(), nullptr, nullptr);
         if (!mWindow) {
             LOG_FATAL("Failed to create window.");
@@ -66,24 +73,32 @@ namespace golias {
     void Window::WaitForEvents() {
         glfwWaitEvents();
     }
-    
-    std::vector<const char*> Window::GetRequiredInstanceExtensions() const {
-        uint32_t count = 0;
-        const char** extensions = glfwGetRequiredInstanceExtensions(&count);
-        if (!extensions || count == 0) {
-            LOG_ERROR("GLFW did not provide Vulkan instance extensions.");
-            return {};
-        }
 
-        return std::vector<const char*>(extensions, extensions + count);
+    void* Window::GetNativeHandle() const {
+#if defined(GOLIAS_PLATFORM_OSX)
+        if (!mWindow || glfwGetPlatform() != GLFW_PLATFORM_COCOA) {
+            return nullptr;
+        }
+        return glfwGetCocoaWindow(mWindow);
+#else
+        return nullptr;
+#endif
     }
 
-    VkResult Window::CreateSurface(VkInstance instance, VkSurfaceKHR* surface) const {
-        if (!mWindow) {
-            return VK_ERROR_INITIALIZATION_FAILED;
+    void* Window::GetNativeViewHandle() const {
+#if defined(GOLIAS_PLATFORM_OSX)
+        if (!mWindow || glfwGetPlatform() != GLFW_PLATFORM_COCOA) {
+            return nullptr;
         }
 
-        return glfwCreateWindowSurface(instance, mWindow, nullptr, surface);
+        return glfwGetCocoaView(mWindow);
+#else
+        return nullptr;
+#endif
+    }
+
+    void* Window::GetGLFWHandle() const {
+        return mWindow;
     }
 
 

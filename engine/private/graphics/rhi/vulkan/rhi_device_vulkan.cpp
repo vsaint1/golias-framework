@@ -2,6 +2,7 @@
 
 #include "core/window.h"
 #include "graphics/rhi/vulkan/vk_common.h"
+#include "graphics/rhi/vulkan/vk_surface.h"
 #include <vulkan/vk_enum_string_helper.h>
 
 namespace golias {
@@ -58,7 +59,7 @@ namespace golias {
             }
         }
 
-        if (!VK_CHECK_RESULT(mWindow->CreateSurface(mInstance, &mSurface))) {
+        if (!VK_CHECK_RESULT(CreateVulkanSurface(*mWindow, mInstance, &mSurface))) {
             return false;
         }
 
@@ -123,7 +124,7 @@ namespace golias {
     }
 
     bool RHIDeviceVulkan::CreateInstance(bool debug) {
-        std::vector<const char*> extensions = mWindow->GetRequiredInstanceExtensions();
+        std::vector<const char*> extensions = GetVulkanInstanceExtensions();
         if (extensions.empty()) {
             return false;
         }
@@ -2759,11 +2760,12 @@ namespace golias {
             return;
         }
 
+        // flip the viewport without mutating camera matrices.
         const VkViewport viewport = {
             .x        = x,
-            .y        = y,
+            .y        = y + height,
             .width    = width,
-            .height   = height,
+            .height   = -height,
             .minDepth = minDepth,
             .maxDepth = maxDepth,
         };
