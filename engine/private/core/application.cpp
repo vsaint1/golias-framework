@@ -2,7 +2,7 @@
 
 #include "core/asset/asset_manager.h"
 #include "core/io/file_system.h"
-#include "core/window.h"
+#include "core/wsi/glfw_window.h"
 #include "graphics/mesh_library.h"
 #include "graphics/render_resources.h"
 #if defined(GOLIAS_PLATFORM_OSX)
@@ -19,7 +19,7 @@
 namespace golias {
 
     void Application::Run() {
-        auto window = std::make_shared<Window>(mConfig.Width, mConfig.Height, mConfig.Title);
+        auto window = std::make_shared<GLFW_Window>(mConfig.Width, mConfig.Height, mConfig.Title);
 
         if (mConfig.Backend == RHIBackend::Compatibility) {
             LOG_ERROR("Compatibility backend is not available yet.");
@@ -132,13 +132,14 @@ namespace golias {
         mRenderer->Initialize(mDevice);
 
         TextureDesc depthDesc;
-        int framebufferWidth = mConfig.Width;
+        int framebufferWidth  = mConfig.Width;
         int framebufferHeight = mConfig.Height;
+
         window->GetFramebufferSize(&framebufferWidth, &framebufferHeight);
         depthDesc.width            = static_cast<uint32_t>(framebufferWidth);
         depthDesc.height           = static_cast<uint32_t>(framebufferHeight);
-
-     
+        depthDesc.format           = mDevice->GetDepthFormat();
+        
         TextureHandle depthTexture = mDevice->CreateTexture(depthDesc);
 
         auto fpsStart      = std::chrono::steady_clock::now();
@@ -154,7 +155,7 @@ namespace golias {
             }
 
             CommandBufferHandle commandBuffer = mDevice->BeginCommandBuffer();
-            
+
             TextureHandle swapchainTexture;
             uint32_t width  = 0;
             uint32_t height = 0;
@@ -184,7 +185,8 @@ namespace golias {
 
             mDevice->BeginRenderPass(commandBuffer, renderPass);
 
-            mRenderer->BeginFrame(commandBuffer, swapchainTexture, camera->GetView(), camera->GetProjection(), glm::vec3(1.f), width, height);
+            mRenderer->BeginFrame(
+                commandBuffer, swapchainTexture, camera->GetView(), camera->GetProjection(), glm::vec3(1.f), width, height);
             mRenderer->RenderScene(mScene);
             mRenderer->EndFrame();
 

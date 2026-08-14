@@ -15,7 +15,7 @@ namespace golias {
 
 
         RHIBackend GetBackend() const override {
-            return RHIBackend::ForwardPlus;
+            return RHIBackend::Vulkan;
         }
 
         RHIDeviceInfo GetDeviceInfo() const override {

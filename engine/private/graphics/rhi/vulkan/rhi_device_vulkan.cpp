@@ -388,7 +388,7 @@ namespace golias {
 
         mInfo.apiVersion = apiVersionStr;
 
-        mInfo.backend  = RHIBackend::ForwardPlus;
+        mInfo.backend  = RHIBackend::Vulkan;
         mInfo.vendorId = properties.vendorID;
         mInfo.deviceId = properties.deviceID;
 
