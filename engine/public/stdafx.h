@@ -14,7 +14,6 @@
 #include <utility>
 #include <vector>
 
-#include <glfw/glfw3.h>
 
 #define SPDLOG_NO_EXCEPTIONS
 #include <spdlog/fmt/fmt.h>

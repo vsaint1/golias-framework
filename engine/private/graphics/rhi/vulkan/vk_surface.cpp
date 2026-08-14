@@ -1,6 +1,6 @@
 #include "graphics/rhi/vulkan/vk_surface.h"
 
-#include "core/window.h"
+#include "core/wsi/glfw_window.h"
 
 namespace golias {
 
@@ -16,7 +16,7 @@ namespace golias {
     }
 
     VkResult CreateVulkanSurface(const Window& window, VkInstance instance, VkSurfaceKHR* surface) {
-        auto* glfwWindow = static_cast<GLFWwindow*>(window.GetGLFWHandle());
+        GLFWwindow* glfwWindow = static_cast<GLFWwindow*>(window.GetHandle());
         if (!glfwWindow) {
             return VK_ERROR_INITIALIZATION_FAILED;
         }
