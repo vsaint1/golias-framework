@@ -62,10 +62,6 @@ namespace golias {
 
     void Camera::RecalculateProjection() {
         mProjection = glm::perspectiveLH_ZO(glm::radians(mFov), mAspect, mNear, mFar);
-
-        // Vulkan clip space: NDC has a flipped Y axis (y-down) compared to
-        // OpenGL. Flip the projection so the world appears upright.
-        mProjection[1][1] *= -1.0f;
     }
 
     void Camera::RecalculateView() {
