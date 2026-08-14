@@ -5,7 +5,11 @@
 #include "core/window.h"
 #include "graphics/mesh_library.h"
 #include "graphics/render_resources.h"
-#include "graphics/rhi/vulkan/rhi_device_vulkan.h"
+#if defined(GOLIAS_PLATFORM_OSX)
+    #include "graphics/rhi/metal/rhi_device_metal.h"
+#else
+    #include "graphics/rhi/vulkan/rhi_device_vulkan.h"
+#endif
 #include "graphics/scene_renderer.h"
 #include "scene/components/3d/camera.h"
 #include "scene/components/3d/mesh_filter.h"
@@ -24,7 +28,11 @@ namespace golias {
 
         spdlog::set_level(mConfig.Debug ? spdlog::level::debug : spdlog::level::info);
 
+#if defined(GOLIAS_PLATFORM_OSX)
+        mDevice = std::make_shared<RHIDeviceMetal>(window.get(), mConfig.Debug);
+#else
         mDevice = std::make_shared<RHIDeviceVulkan>(window.get(), mConfig.Debug);
+#endif
 
         // mDevice->SetVsyncEnabled(false);
 
@@ -38,7 +46,11 @@ namespace golias {
         camera->LookAt({0.0f, 0.0f, 0.0f});
         mScene->SetMainCamera(camera);
 
+#if defined(GOLIAS_PLATFORM_OSX)
+        auto defaultShader = AssetManager::Load<Shader>("internal/shaders/metal/default.metal");
+#else
         auto defaultShader = AssetManager::Load<Shader>("internal/shaders/vulkan/default.spv");
+#endif
 
         ShaderDesc vertexDesc;
         vertexDesc.stage             = ShaderStage::Vertex;
@@ -120,10 +132,13 @@ namespace golias {
         mRenderer->Initialize(mDevice);
 
         TextureDesc depthDesc;
-        depthDesc.width            = mConfig.Width;
-        depthDesc.height           = mConfig.Height;
-        depthDesc.format           = TextureFormat::D32_FLOAT;
-        depthDesc.usage            = TextureUsage::DepthTarget;
+        int framebufferWidth = mConfig.Width;
+        int framebufferHeight = mConfig.Height;
+        window->GetFramebufferSize(&framebufferWidth, &framebufferHeight);
+        depthDesc.width            = static_cast<uint32_t>(framebufferWidth);
+        depthDesc.height           = static_cast<uint32_t>(framebufferHeight);
+
+     
         TextureHandle depthTexture = mDevice->CreateTexture(depthDesc);
 
         auto fpsStart      = std::chrono::steady_clock::now();

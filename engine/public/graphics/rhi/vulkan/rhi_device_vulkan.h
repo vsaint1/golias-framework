@@ -104,7 +104,7 @@ namespace golias {
         void InsertDebugLabel(CommandBufferHandle, const char*) override;
 
     private:
-        RHIDeviceVulkan() = default;
+        RHIDeviceVulkan() = delete;
 
         static constexpr uint32_t MaxFramesInFlight  = 2;
         static constexpr uint64_t SwapchainTextureId = 1;
