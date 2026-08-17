@@ -35,11 +35,11 @@ SamplerState baseMapSampler : register(s0, space1);
 VertexOutput vertex_main(VertexInput input) {
     VertexOutput output;
     float4 worldPos = mul(perObject.model, float4(input.pos, 1.0));
-    float4 viewPos = mul(perFrame.view, worldPos);
+    float4 viewPos  = mul(perFrame.view, worldPos);
 
-    output.pos = mul(perFrame.projection, viewPos);
+    output.pos   = mul(perFrame.projection, viewPos);
     output.color = input.color;
-    output.uv = input.uv;
+    output.uv    = input.uv;
 
     return output;
 }
@@ -47,5 +47,11 @@ VertexOutput vertex_main(VertexInput input) {
 [shader("fragment")]
 float4 fragment_main(VertexOutput input) : SV_Target {
     float4 texColor = baseMap.Sample(baseMapSampler, input.uv);
-    return float4(input.color * perMaterial.color.rgb * texColor.rgb, 1.0);
+
+    if (texColor.a < 0.1) {
+        discard;
+    }
+
+    return float4(input.color * perMaterial.color.rgb * texColor.rgb, perMaterial.color.a * texColor.a);
 }
+
