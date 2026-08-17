@@ -6,11 +6,13 @@
 #include "scene/scene.h"
 
 
+
 namespace golias {
 
 
     bool SceneRenderer::Initialize(const Ref<RHIDevice>& device) {
-        mDevice = device;
+        mDevice        = device;
+        mPipelineCache = std::make_unique<GraphicsPipelineStateCache>(device);
 
         TextureDesc whiteDesc;
         whiteDesc.width      = 1;
@@ -30,7 +32,12 @@ namespace golias {
     void SceneRenderer::Shutdown() {
         mCommands.clear();
         mLights.clear();
+        if (mPipelineCache) {
+            mPipelineCache->Clear();
+        }
+
         mDevice.reset();
+        mPipelineCache.reset();
     }
 
     void SceneRenderer::BeginFrame(CommandBufferHandle commandBuffer,
@@ -83,12 +90,21 @@ namespace golias {
                                bool castShadows,
                                bool receiveShadows) {
 
-        if (!mesh || !material || !material->Parent || !mesh->VertexBuffer || !mesh->IndexBuffer || !material->Parent->Pipeline) {
+        if (!mesh || !material || !material->Parent || !material->Parent->GetShader() || !mesh->VertexBuffer || !mesh->IndexBuffer) {
             return;
         }
 
-        mCommands.push_back({std::move(mesh), std::move(material), modelMatrix, submeshIndex, castShadows, receiveShadows});
+        const BlendMode blendMode = material->GetBlendMode();
+        mCommands.push_back({std::move(mesh), std::move(material), modelMatrix, submeshIndex, castShadows, receiveShadows, blendMode});
         ++mStats.MeshCount;
+    }
+
+    bool SceneRenderer::IsTransparent(const Ref<MaterialInstance>& material) const {
+        if (!material || !material->Parent) {
+            return false;
+        }
+
+        return material->GetBlendMode() != BlendMode::Opaque;
     }
 
     void SceneRenderer::SubmitLight(const RenderLight& light) {
@@ -123,6 +139,26 @@ namespace golias {
         // EndFrame();
     }
 
+    void SceneRenderer::SortCommands() {
+
+        std::stable_sort(mCommands.begin(), mCommands.end(), [this](const RenderCommand& a, const RenderCommand& b) {
+            const bool aTransparent = a.MaterialBlendMode != BlendMode::Opaque;
+            const bool bTransparent = b.MaterialBlendMode != BlendMode::Opaque;
+            if (aTransparent != bTransparent) {
+                return !aTransparent;
+            }
+
+            if (!aTransparent) {
+                return false;
+            }
+
+            const glm::vec3 aPosition = glm::vec3(a.ModelMatrix[3]);
+            const glm::vec3 bPosition = glm::vec3(b.ModelMatrix[3]);
+            return glm::length2(aPosition - mCameraPos) > glm::length2(bPosition - mCameraPos);
+        });
+
+    }
+
     void SceneRenderer::EndFrame() {
         if (!mDevice || !mCommandBuffer) {
             return;
@@ -131,27 +167,74 @@ namespace golias {
         mDevice->SetViewport(mCommandBuffer, 0.0f, 0.0f, static_cast<float>(mWidth), static_cast<float>(mHeight));
         mDevice->SetScissor(mCommandBuffer, 0, 0, static_cast<int>(mWidth), static_cast<int>(mHeight));
 
+        SortCommands();
+
         for (const RenderCommand& command : mCommands) {
-            mDevice->BindGraphicsPipeline(mCommandBuffer, command.Material->Parent->Pipeline);
-            for (const BoundTexture& binding : command.Material->GetTextures()) {
-                if (binding.VertexStage) {
-                    mDevice->BindVertexSampler(mCommandBuffer, binding.Slot, binding.Texture, binding.Sampler);
-                } else {
-                    mDevice->BindFragmentSampler(mCommandBuffer, binding.Slot, binding.Texture, binding.Sampler);
+            const Ref<Shader>& shader = command.Material->Parent->GetShader();
+
+            const bool transparent = command.MaterialBlendMode != BlendMode::Opaque;
+            ColorTargetBlendState blendState = {
+                .enableBlend    = transparent,
+                .srcColorFactor = command.MaterialBlendMode == BlendMode::Premultiplied ? BlendFactor::One : BlendFactor::SrcAlpha,
+                .dstColorFactor = command.MaterialBlendMode == BlendMode::Opaque
+                                      ? BlendFactor::Zero
+                                      : (command.MaterialBlendMode == BlendMode::Additive ? BlendFactor::One : BlendFactor::OneMinusSrcAlpha),
+                .colorOp        = BlendOp::Add,
+                .srcAlphaFactor = BlendFactor::One,
+                .dstAlphaFactor = transparent ? BlendFactor::OneMinusSrcAlpha : BlendFactor::Zero,
+                .alphaOp        = BlendOp::Add,
+            };
+
+            PipelineKey key = {
+                .VertexShader     = shader->GetHandle(ShaderStage::Vertex),
+                .FragmentShader   = shader->GetHandle(ShaderStage::Fragment),
+                .VertexBuffers    = command.Mesh->VertexBuffers,
+                .VertexAttributes = command.Mesh->VertexAttributes,
+                .Rasterizer       = {.cullMode = command.Material->GetCullMode()},
+                .DepthStencil     = {.enableDepthTest = command.Material->GetDepthTest(),
+                                     .enableDepthWrite = command.Material->GetDepthWrite(),
+                                     .enableStencilTest = true},
+                .BlendState       = blendState,
+                .ColorFormat      = mDevice->GetSwapchainFormat(),
+                .DepthFormat      = mDevice->GetDepthFormat(),
+            };
+
+            mDevice->BindGraphicsPipeline(mCommandBuffer, mPipelineCache->TryGet(key));
+
+            for (const auto& entry : shader->GetProperties()) {
+                const ShaderProperty& property     = entry.second;
+                const MaterialPropertyValue* value = command.Material->Resolve(property.Id);
+
+                if (property.Type == ShaderPropertyType::Texture2D) {
+                    TextureHandle texture = mDefaultWhiteTexture;
+                    if (value && std::holds_alternative<Ref<Texture2D>>(*value) && std::get<Ref<Texture2D>>(*value)) {
+                        texture = std::get<Ref<Texture2D>>(*value)->GetHandle();
+                    }
+
+                    if (property.Stage == ShaderStage::Vertex) {
+                        mDevice->BindVertexSampler(mCommandBuffer, property.Binding, texture, mDefaultSampler);
+                    } else {
+                        mDevice->BindFragmentSampler(mCommandBuffer, property.Binding, texture, mDefaultSampler);
+                    }
+
+                } else if (value && std::holds_alternative<glm::vec4>(*value)) {
+                    mDevice->PushFragmentUniformData(mCommandBuffer, property.Binding, &std::get<glm::vec4>(*value), sizeof(glm::vec4));
+                } else if (value && std::holds_alternative<glm::vec3>(*value)) {
+                    mDevice->PushFragmentUniformData(mCommandBuffer, property.Binding, &std::get<glm::vec3>(*value), sizeof(glm::vec3));
+                } else if (value && std::holds_alternative<glm::vec2>(*value)) {
+                    mDevice->PushFragmentUniformData(mCommandBuffer, property.Binding, &std::get<glm::vec2>(*value), sizeof(glm::vec2));
+                } else if (value && std::holds_alternative<float>(*value)) {
+                    mDevice->PushFragmentUniformData(mCommandBuffer, property.Binding, &std::get<float>(*value), sizeof(float));
                 }
-            }
-
-
-            if (!command.Material->HasTextures()) {
-                mDevice->BindFragmentSampler(mCommandBuffer, ALBEDO_MAP_UNIT, mDefaultWhiteTexture, mDefaultSampler);
             }
 
             mDevice->BindUniformBuffer(mCommandBuffer, 0, 0, mPerFrameBuffer);
 
+
             mDevice->PushVertexUniformData(mCommandBuffer, 2, &command.ModelMatrix, sizeof(command.ModelMatrix));
-            mDevice->PushFragmentUniformData(mCommandBuffer, 1, &command.Material->Color, sizeof(command.Material->Color));
 
             mDevice->BindVertexBuffer(mCommandBuffer, 0, command.Mesh->VertexBuffer);
+
             mDevice->BindIndexBuffer(mCommandBuffer, command.Mesh->IndexBuffer, command.Mesh->Indices);
 
             if (command.SubmeshIndex < command.Mesh->Submeshes.size()) {
@@ -163,6 +246,6 @@ namespace golias {
                 mStats.TriangleCount += submesh.IndexCount / 3;
             }
         }
-    }
+    } // namespace golias
 
 } // namespace golias

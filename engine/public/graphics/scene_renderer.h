@@ -1,5 +1,6 @@
 #pragma once
 
+#include "graphics/gfx_pipeline_cache.h"
 #include "graphics/render_resources.h"
 
 #include <glm/glm.hpp>
@@ -15,6 +16,7 @@ namespace golias {
         uint32_t SubmeshIndex = 0;
         bool CastShadows      = true;
         bool ReceiveShadows   = true;
+        BlendMode MaterialBlendMode = BlendMode::Opaque;
     };
 
     struct RenderLight {
@@ -87,7 +89,12 @@ namespace golias {
         }
 
     private:
+        bool IsTransparent(const Ref<MaterialInstance>& material) const;
+
+        void SortCommands();
+    private:
         Ref<RHIDevice> mDevice = nullptr;
+        Scope<GraphicsPipelineStateCache> mPipelineCache;
 
         CommandBufferHandle mCommandBuffer;
         TextureHandle mRenderTarget;

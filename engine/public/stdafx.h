@@ -13,6 +13,7 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include <variant>
 
 
 #define SPDLOG_NO_EXCEPTIONS
@@ -20,8 +21,12 @@
 #include <spdlog/spdlog.h>
 
 #define GLM_FORCE_ZERO_TO_ONE
+#define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/norm.hpp>
+
+
 #include <json/json.hpp>
 
 

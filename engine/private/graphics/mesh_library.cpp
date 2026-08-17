@@ -12,6 +12,12 @@ namespace golias {
             auto mesh         = std::make_shared<Mesh>();
             mesh->Vertices    = vertices;
             mesh->IndicesData = indices;
+            mesh->VertexBuffers.push_back({0, kPosColorUVStride * sizeof(float), 0, false});
+            mesh->VertexAttributes = {
+                {0, 0, 0, VertexElementFormat::Float3},
+                {1, 0, 12, VertexElementFormat::Float3},
+                {2, 0, 24, VertexElementFormat::Float2},
+            };
             mesh->VertexBuffer =
                 device->CreateBuffer({.usage = BufferUsage::Vertex, .size = static_cast<uint32_t>(vertices.size() * sizeof(float))});
 
