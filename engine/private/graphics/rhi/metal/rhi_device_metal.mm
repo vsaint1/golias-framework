@@ -370,6 +370,7 @@ namespace golias {
         mShaders.emplace(id, ShaderState{Keep(library), Keep(function), desc.stage, desc.numSamplers, desc.numUniformBuffers});
         return ShaderHandle{id};
     }
+
     void RHIDeviceMetal::DestroyShader(ShaderHandle handle) {
         auto it = mShaders.find(handle.id);
         if (it != mShaders.end()) {
@@ -438,6 +439,7 @@ namespace golias {
         mGraphicsPipelines.emplace(id, PipelineState{Keep(render), Keep(depth), nullptr});
         return GraphicsPipelineHandle{id};
     }
+
     void RHIDeviceMetal::DestroyGraphicsPipeline(GraphicsPipelineHandle handle) {
         auto it = mGraphicsPipelines.find(handle.id);
         if (it != mGraphicsPipelines.end()) {
@@ -685,12 +687,14 @@ namespace golias {
             [(id<MTLRenderCommandEncoder>) Obj(c->renderEncoder) setVertexBytes:d length:n atIndex:slot];
         }
     }
+
     void RHIDeviceMetal::PushFragmentUniformData(CommandBufferHandle h, uint32_t slot, const void* d, uint32_t n) {
         auto* c = GetCommand(h);
         if (c && c->renderEncoder) {
             [(id<MTLRenderCommandEncoder>) Obj(c->renderEncoder) setFragmentBytes:d length:n atIndex:slot];
         }
     }
+
     void RHIDeviceMetal::BindFragmentSampler(CommandBufferHandle h, uint32_t slot, TextureHandle t, SamplerHandle s) {
         auto* c = GetCommand(h);
         auto* x = GetTexture(t);
@@ -827,6 +831,7 @@ namespace golias {
         auto i = mBuffers.find(h.id);
         return i == mBuffers.end() ? nullptr : &i->second;
     }
+
     RHIDeviceMetal::TextureState* RHIDeviceMetal::GetTexture(TextureHandle h) {
         auto i = mTextures.find(h.id);
         return i == mTextures.end() ? nullptr : &i->second;
