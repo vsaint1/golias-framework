@@ -2287,6 +2287,10 @@ namespace golias {
             mDevice, mSwapchain, UINT64_MAX, mFrames[command->frameIndex].imageAvailable, VK_NULL_HANDLE, &imageIndex);
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+            
+            vkEndCommandBuffer(command->buffer);
+            mCommands.erase(handle.id);
+
             RecreateSwapchain();
             return false;
         }
