@@ -9,6 +9,7 @@
 namespace golias {
 
     class Camera;
+    class Model;
 
     
     class Scene {
@@ -152,6 +153,8 @@ namespace golias {
 
         Camera* GetMainCamera() const;
 
+        GameObject* Instantiate(const Ref<Model>& model, const String& name = "Model");
+
         // Renames an already-registered object, keeping the name index in sync.
         void RenameObject(GameObject* object, const String& newName);
 
@@ -165,9 +168,13 @@ namespace golias {
 
         const std::vector<std::unique_ptr<GameObject>>& GetObjects() const;
 
+        void PrintTree() const;
+
         void Update(float deltaTime);
 
     private:
+        GameObject* InstantiateModel(const Ref<Model>& model, const String& name = "Model");
+
         void UnregisterObject(GameObject* object);
 
         void RemoveFromNameIndex(GameObject* object);
