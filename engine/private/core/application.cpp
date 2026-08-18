@@ -68,54 +68,44 @@ namespace golias {
         fragmentDesc.numSamplers    = 1;
         ShaderHandle fragmentShader = mDevice->CreateShader(fragmentDesc);
 
-        VertexBufferDesc vertexBuffer{0, 32, false, 0};
-        VertexAttribute attributes[] = {
-            {0, 0, 0,  VertexElementFormat::Float3},
-            {1, 0, 12, VertexElementFormat::Float3},
-            {2, 0, 24, VertexElementFormat::Float2},
-        };
+        defaultShader->VertexHandle   = vertexShader;
+        defaultShader->FragmentHandle = fragmentShader;
 
-        VertexInputState vertexInput{&vertexBuffer, 1, attributes, 3};
-
-        ColorTargetDesc target = {
-            .format = TextureFormat::B8G8R8A8_UNORM,
-        };
-
-
-        GraphicsPipelineTargetInfo targetInfo{&target, 1, true, TextureFormat::D32_FLOAT};
-
-        GraphicsPipelineDesc pipelineDesc;
-        pipelineDesc.vertexShader                       = vertexShader;
-        pipelineDesc.fragmentShader                     = fragmentShader;
-        pipelineDesc.vertexInput                        = vertexInput;
-        pipelineDesc.targetInfo                         = targetInfo;
-        pipelineDesc.depthStencilState.enableDepthTest  = true;
-        pipelineDesc.depthStencilState.enableDepthWrite = true;
-        GraphicsPipelineHandle samplePipeline           = mDevice->CreateGraphicsPipeline(pipelineDesc);
+        defaultShader->AddProperty("BaseColor", ShaderPropertyType::Color, 1, ShaderStage::Fragment);
+        defaultShader->AddProperty("BaseMap", ShaderPropertyType::Texture2D, 0, ShaderStage::Fragment);
 
         auto create_material = [&](const glm::vec4& color) {
-            auto material      = std::make_shared<Material>();
-            material->Pipeline = samplePipeline;
-            material->DefineTextureProperty(*mDevice, "BaseMap", 0);
+            auto material = std::make_shared<Material>();
+            material->SetShader(defaultShader);
+            material->SetColor("BaseColor", color);
             auto instance    = std::make_shared<MaterialInstance>();
             instance->Parent = material;
-            instance->Color  = color;
             return instance;
         };
 
-        auto add_primitive = [&](const String& name, const glm::vec3& position, const glm::vec4& color, Ref<Mesh> mesh) {
+        auto add_primitive = [&](const String& name,
+                                 const glm::vec3& position,
+                                 const glm::vec4& color,
+                                 Ref<Mesh> mesh,
+                                 BlendMode blendMode = BlendMode::Opaque) {
             GameObject* object = mScene->AddObject<GameObject>(name);
             object->SetPosition(position);
             object->AddComponent<MeshFilter>()->SetMesh(mesh);
-            object->AddComponent<MeshRenderer>()->SetMaterial(create_material(color));
+
+            auto material = create_material(color);
+
+            material->SetBlendMode(blendMode);
+            object->AddComponent<MeshRenderer>()->SetMaterial(material);
         };
 
         add_primitive("RedCube", {-3.5f, 0.0f, 1.0f}, {0.8f, 0.1f, 0.1f, 1.0f}, MeshLibrary::CreateCube(mDevice));
-        add_primitive("GreenSphere", {0.0f, 0.0f, 1.0f}, {0.1f, 0.8f, 0.1f, 1.0f}, MeshLibrary::CreateSphere(mDevice));
+        add_primitive("GreenSphere", {7.0f, 0.0f, 5.0f}, {0.1f, 0.8f, 0.1f, 1.0f}, MeshLibrary::CreateSphere(mDevice));
         add_primitive("BlueCylinder", {3.5f, 0.0f, 1.0f}, {0.1f, 0.1f, 0.8f, 1.0f}, MeshLibrary::CreateCylinder(mDevice));
         add_primitive("YellowCapsule", {-2.0f, 0.0f, 4.0f}, {0.9f, 0.8f, 0.1f, 1.0f}, MeshLibrary::CreateCapsule(mDevice));
         add_primitive("PurpleTorus", {2.0f, 0.0f, 4.0f}, {0.7f, 0.2f, 0.8f, 1.0f}, MeshLibrary::CreateTorus(mDevice));
         add_primitive("WhiteQuad", {0.0f, 1.5f, 5.0f}, {0.9f, 0.9f, 0.9f, 1.0f}, MeshLibrary::CreateQuad(mDevice));
+        add_primitive(
+            "TransparentCube", {0.0f, 1.0f, -4.0f}, {0.8f, 0.1f, 0.1f, 0.09f}, MeshLibrary::CreateCube(mDevice), BlendMode::Alpha);
 
         GameObject* ground = mScene->AddObject<GameObject>("Ground");
         ground->SetScale({8.0f, 1.0f, 8.0f});
@@ -128,6 +118,14 @@ namespace golias {
 
         ground->AddComponent<MeshRenderer>()->SetMaterial(groundMaterial);
 
+        if (const Ref<Model> helmet = AssetManager::Load<Model>("models/DamagedHelmet/DamagedHelmet.gltf")) {
+            helmet->SetShader(defaultShader);
+            if (GameObject* object = mScene->Instantiate(helmet, "DamagedHelmet")) {
+                object->SetPosition({0.0f, 1.0f, 3.0f});
+                object->SetScale({2.0f, 2.0f, 2.0f});
+            }
+        }
+
         mRenderer = std::make_shared<SceneRenderer>();
         mRenderer->Initialize(mDevice);
 
@@ -136,15 +134,20 @@ namespace golias {
         int framebufferHeight = mConfig.Height;
 
         window->GetFramebufferSize(&framebufferWidth, &framebufferHeight);
-        depthDesc.width            = static_cast<uint32_t>(framebufferWidth);
-        depthDesc.height           = static_cast<uint32_t>(framebufferHeight);
-        depthDesc.format           = mDevice->GetDepthFormat();
-        
+        depthDesc.width  = static_cast<uint32_t>(framebufferWidth);
+        depthDesc.height = static_cast<uint32_t>(framebufferHeight);
+        depthDesc.format = mDevice->GetDepthFormat();
+
         TextureHandle depthTexture = mDevice->CreateTexture(depthDesc);
+        uint32_t depthWidth        = depthDesc.width;
+        uint32_t depthHeight       = depthDesc.height;
 
         auto fpsStart      = std::chrono::steady_clock::now();
         uint32_t fpsFrames = 0;
         double fpsElapsed  = 0.0;
+
+
+        mScene->PrintTree();
 
         while (!window->ShouldClose()) {
             window->PollEvents();
@@ -154,6 +157,10 @@ namespace golias {
                 cube->RotateLocal({0.0f, 1.0f, 0.0f}, 0.5f);
             }
 
+            if (GameObject* helmet = mScene->FindObject<GameObject>("DamagedHelmet")) {
+                helmet->RotateLocal({0.0f, 1.0f, 0.0f}, 0.2f);
+            }
+
             CommandBufferHandle commandBuffer = mDevice->BeginCommandBuffer();
 
             TextureHandle swapchainTexture;
@@ -161,6 +168,17 @@ namespace golias {
             uint32_t height = 0;
             if (!mDevice->AcquireSwapchainTexture(commandBuffer, &swapchainTexture, &width, &height)) {
                 continue;
+            }
+
+            // Ensure Depth Texture matches
+            if (width != depthWidth || height != depthHeight) {
+                mDevice->WaitForIdle();
+                mDevice->DestroyTexture(depthTexture);
+                depthDesc.width  = width;
+                depthDesc.height = height;
+                depthTexture     = mDevice->CreateTexture(depthDesc);
+                depthWidth       = width;
+                depthHeight      = height;
             }
 
             ++fpsFrames;

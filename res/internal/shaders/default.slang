@@ -28,8 +28,7 @@ ConstantBuffer<PerFrame> perFrame : register(b0);
 ConstantBuffer<PerMaterial> perMaterial : register(b1);
 ConstantBuffer<PerObject> perObject : register(b2);
 
-Texture2D<float4> baseMap : register(t0, space1);
-SamplerState baseMapSampler : register(s0, space1);
+Sampler2D baseMap : register(s0, space1);
 
 [shader("vertex")]
 VertexOutput vertex_main(VertexInput input) {
@@ -46,7 +45,7 @@ VertexOutput vertex_main(VertexInput input) {
 
 [shader("fragment")]
 float4 fragment_main(VertexOutput input) : SV_Target {
-    float4 texColor = baseMap.Sample(baseMapSampler, input.uv);
+    float4 texColor = baseMap.Sample(input.uv);
 
     if (texColor.a < 0.1) {
         discard;
