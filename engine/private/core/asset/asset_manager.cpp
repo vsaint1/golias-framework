@@ -1,6 +1,7 @@
 #include "core/asset/asset_manager.h"
 
 #include "core/io/file_system.h"
+#include "graphics/model_importer.h"
 #include "graphics/render_resources.h"
 #include "graphics/rhi/rhi_device.h"
 #include "stb_image.h"
@@ -15,6 +16,8 @@ namespace golias {
     std::unordered_map<UUID, String> AssetManager::sUUIDToPath;
 
     namespace {
+
+        constexpr uint32_t kModelVertexStride = 8;
 
         String MetadataPath(const String& virtualPath) {
             return virtualPath + ".meta";
@@ -45,6 +48,69 @@ namespace golias {
             YAML::Emitter emitter;
             emitter << YAML::BeginMap << YAML::Key << "guid" << YAML::Value << uuid << YAML::EndMap;
             return VFS::WriteText(metadataPath, emitter.c_str());
+        }
+
+        Ref<Texture2D> CreateImportedTexture(const ImportedTexture& source) {
+            RHIDevice* device = AssetManager::GetDevice();
+            if (!device || source.Data.empty()) {
+                return nullptr;
+            }
+
+            int width = static_cast<int>(source.Width);
+            int height = static_cast<int>(source.Height);
+            unsigned char* pixels = nullptr;
+            if (source.IsRawRGBA) {
+                pixels = const_cast<unsigned char*>(source.Data.data());
+            } else {
+                int channels = 0;
+                pixels = stbi_load_from_memory(source.Data.data(), static_cast<int>(source.Data.size()), &width, &height, &channels, 4);
+            }
+
+            if (!pixels || width <= 0 || height <= 0) {
+                LOG_WARN("Failed to decode imported texture '{}'.", source.Name);
+                return nullptr;
+            }
+
+            TextureDesc desc;
+            desc.width = static_cast<uint32_t>(width);
+            desc.height = static_cast<uint32_t>(height);
+            desc.format = TextureFormat::R8G8B8A8_UNORM;
+            desc.usage = TextureUsage::Sampler;
+
+            auto texture = std::make_shared<Texture2D>();
+            texture->Handle = device->CreateTexture(desc);
+            texture->Width = desc.width;
+            texture->Height = desc.height;
+            device->UploadToTexture(texture->Handle, pixels, desc.width, desc.height, 0);
+         
+            if (!source.IsRawRGBA) {
+                stbi_image_free(pixels);
+            }
+
+            return texture;
+        }
+
+        Ref<Mesh> CreateImportedMesh(const ImportedMesh& source) {
+            RHIDevice* device = AssetManager::GetDevice();
+            if (!device || source.Vertices.empty() || source.Indices.empty()) {
+                return nullptr;
+            }
+
+            auto mesh = std::make_shared<Mesh>();
+            mesh->Vertices = source.Vertices;
+            mesh->IndicesData = source.Indices;
+            mesh->VertexBuffers.push_back({0, kModelVertexStride * sizeof(float), 0, false});
+            mesh->VertexAttributes = {
+                {0, 0, 0, VertexElementFormat::Float3},
+                {1, 0, 12, VertexElementFormat::Float3},
+                {2, 0, 24, VertexElementFormat::Float2},
+            };
+            mesh->VertexBuffer = device->CreateBuffer({.usage = BufferUsage::Vertex, .size = static_cast<uint32_t>(mesh->Vertices.size() * sizeof(float))});
+            mesh->IndexBuffer = device->CreateBuffer({.usage = BufferUsage::Index, .size = static_cast<uint32_t>(mesh->IndicesData.size() * sizeof(uint32_t))});
+            device->UploadToBuffer(mesh->VertexBuffer, mesh->Vertices.data(), static_cast<uint32_t>(mesh->Vertices.size() * sizeof(float)), 0);
+            device->UploadToBuffer(mesh->IndexBuffer, mesh->IndicesData.data(), static_cast<uint32_t>(mesh->IndicesData.size() * sizeof(uint32_t)), 0);
+            mesh->Submeshes.push_back({0, static_cast<uint32_t>(mesh->IndicesData.size())});
+            return mesh;
         }
 
     } // namespace
@@ -159,6 +225,97 @@ namespace golias {
 
         RegisterAsset(virtualPath, uuid, texture);
         return texture;
+    }
+
+    template <>
+    Ref<Model> AssetManager::Load<Model>(const String& virtualPath) {
+        auto it = sCache.find(virtualPath);
+        if (it != sCache.end()) {
+            return static_pointer_cast<Model>(it->second);
+        }
+
+        if (!VFS::Exists(virtualPath)) {
+            LOG_ERROR("Asset does not exist '{}'.", virtualPath);
+            return nullptr;
+        }
+
+        const UUID uuid = LoadOrCreateUUID(virtualPath);
+        if (auto uuidIt = sCacheByUUID.find(uuid); uuidIt != sCacheByUUID.end()) {
+            sCache[virtualPath] = uuidIt->second;
+            return static_pointer_cast<Model>(uuidIt->second);
+        }
+
+        ImportedModel imported;
+        String error;
+        if (!ModelImporter::ImportFile(virtualPath, imported, error)) {
+            LOG_ERROR("{}", error);
+            return nullptr;
+        }
+
+        std::vector<Ref<Texture2D>> textures;
+        textures.reserve(imported.Textures.size());
+        for (const ImportedTexture& source : imported.Textures) {
+            textures.push_back(CreateImportedTexture(source));
+        }
+
+        std::vector<Ref<Material>> materials;
+        materials.reserve(imported.Materials.size());
+        for (const ImportedMaterial& source : imported.Materials) {
+            auto material = std::make_shared<Material>();
+            material->SetColor("BaseColor", source.BaseColor);
+            if (source.BaseColorTexture >= 0 && source.BaseColorTexture < static_cast<int32_t>(textures.size())) {
+                material->SetTexture("BaseMap", textures[source.BaseColorTexture]);
+            }
+
+            materials.push_back(std::move(material));
+        }
+
+        auto model = std::make_shared<Model>();
+        model->Textures = textures;
+        model->Parts.reserve(imported.Meshes.size());
+        std::vector<int32_t> meshToPart(imported.Meshes.size(), -1);
+        for (size_t meshIndex = 0; meshIndex < imported.Meshes.size(); ++meshIndex) {
+            const ImportedMesh& source = imported.Meshes[meshIndex];
+            Ref<Mesh> mesh = CreateImportedMesh(source);
+            if (!mesh) {
+                continue;
+            }
+
+            Ref<Material> material = std::make_shared<Material>();
+            if (source.MaterialIndex >= 0 && source.MaterialIndex < static_cast<int32_t>(materials.size())) {
+                material = materials[source.MaterialIndex];
+            } else {
+                material->SetColor("BaseColor", glm::vec4(1.0f));
+            }
+            meshToPart[meshIndex] = static_cast<int32_t>(model->Parts.size());
+            model->Parts.push_back({std::move(mesh), std::move(material)});
+        }
+
+        model->Nodes.reserve(imported.Nodes.size());
+        for (const ImportedNode& source : imported.Nodes) {
+            ModelNode node;
+            node.Name = source.Name;
+            node.ParentIndex = source.ParentIndex;
+            node.Position = source.Position;
+            node.Rotation = source.Rotation;
+            node.Scale = source.Scale;
+          
+            for (uint32_t meshIndex : source.MeshIndices) {
+                if (meshIndex < meshToPart.size() && meshToPart[meshIndex] >= 0) {
+                    node.PartIndices.push_back(static_cast<uint32_t>(meshToPart[meshIndex]));
+                }
+            }
+
+            model->Nodes.push_back(std::move(node));
+        }
+
+        if (model->Parts.empty()) {
+            LOG_ERROR("Model '{}' contains no supported triangle meshes.", virtualPath);
+            return nullptr;
+        }
+
+        RegisterAsset(virtualPath, uuid, model);
+        return model;
     }
 
     template <>

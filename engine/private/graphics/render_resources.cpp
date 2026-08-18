@@ -102,14 +102,26 @@ namespace golias {
     }
 
     void Material::SetColor(ShaderPropertyId id, const glm::vec4& value) {
-        if (CheckColorProperty(mShader, id)) {
+        if (!mShader || CheckColorProperty(mShader, id)) {
             mProperties.Set(id, value);
         }
     }
 
     void Material::SetTexture(ShaderPropertyId id, Ref<Texture2D> texture) {
-        if (CheckProperty(mShader, id, ShaderPropertyType::Texture2D)) {
+        if (!mShader || CheckProperty(mShader, id, ShaderPropertyType::Texture2D)) {
             mProperties.Set(id, std::move(texture));
+        }
+    }
+
+#pragma endregion
+
+#pragma region Model
+
+    void Model::SetShader(const Ref<Shader>& shader) {
+        for (ModelPart& part : Parts) {
+            if (part.Material) {
+                part.Material->SetShader(shader);
+            }
         }
     }
 

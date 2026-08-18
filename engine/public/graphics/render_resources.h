@@ -64,6 +64,10 @@ namespace golias {
         uint32_t IndexCount = 0;
     };
 
+    class Material;
+    class Shader;
+    class Texture2D;
+
     class Mesh : public Asset {
     public:
         std::vector<float> Vertices;
@@ -77,6 +81,29 @@ namespace golias {
         std::vector<MeshSubmesh> Submeshes;
         std::vector<VertexBufferDesc> VertexBuffers;
         std::vector<VertexAttribute> VertexAttributes;
+    };
+
+    struct ModelPart {
+        Ref<Mesh> Mesh;
+        Ref<Material> Material;
+    };
+
+    struct ModelNode {
+        String Name;
+        int32_t ParentIndex = -1;
+        glm::vec3 Position = glm::vec3(0.0f);
+        glm::quat Rotation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
+        glm::vec3 Scale = glm::vec3(1.0f);
+        std::vector<uint32_t> PartIndices;
+    };
+
+    class Model : public Asset {
+    public:
+        void SetShader(const Ref<Shader>& shader);
+
+        std::vector<ModelPart> Parts;
+        std::vector<ModelNode> Nodes;
+        std::vector<Ref<Texture2D>> Textures;
     };
 
     // TODO: Make this read only
