@@ -43,7 +43,10 @@ namespace golias {
 
         // Joins two path segments with the platform separator.
         String Combine(const String& lhs, const String& rhs);
-        
+
+        // Returns the file extension (last path segment) of `path`.
+        String Extension(const String& path);
+
     }; // namespace file
 
 } // namespace golias

@@ -3,7 +3,8 @@
 
 namespace golias {
 
-    // Abstract virtual file system. 
+
+    // Abstract virtual file system.
     //     res://internal/shaders/vulkan/test.spv   -> <res>/internal/shaders/vulkan/test.spv
     //     user://preferences/settings.cfg          -> <user data dir>/preferences/settings.cfg
     class FileSystem {
@@ -59,6 +60,10 @@ namespace golias {
 
         inline bool WriteText(const String& virtualPath, const String& content) {
             return FileSystem::GetInstance().WriteAllText(virtualPath, content);
+        }
+
+        inline String PhysicalDirectory(const String& virtualPath) {
+            return std::filesystem::path(FileSystem::GetInstance().Resolve(virtualPath)).parent_path().string();
         }
 
     } // namespace VFS

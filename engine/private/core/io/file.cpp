@@ -1,8 +1,10 @@
 #include "core/io/file.h"
 
-#include <filesystem>
+#include "core/io/file_system.h"
+
 
 namespace golias {
+
 
     namespace {
 
@@ -100,6 +102,14 @@ namespace golias {
         String Combine(const String& lhs, const String& rhs) {
             return (ToPath(lhs) / ToPath(rhs)).string();
         }
+
+        String Extension(const String& path) {
+            String extension = std::filesystem::path(path).extension().string();
+            std::transform(
+                extension.begin(), extension.end(), extension.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+            return extension;
+        }
+
 
     } // namespace file
 
